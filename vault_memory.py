@@ -53,6 +53,10 @@ class VM:
             self.request_processing=False
             self.burst_delay=0
             self.cmd=0
+            self.data=0
+            self.addr=0
+            self.size=0
+            self.burst_num = 0
             print("//--------------Finish Accessing Reading Request Finial cycle-------------------//")
             return
         if (self.request_processing == True and self.burst_delay == 1 and self.cmd == "write"):
@@ -62,6 +66,10 @@ class VM:
             self.request_processing = False
             self.burst_delay = 0
             self.cmd = 0
+            self.data=0
+            self.addr=0
+            self.size=0
+            self.burst_num = 0
             print("//--------------Finish Accessing Reading Request Finial cycle-------------------//")
             return
 
