@@ -13,7 +13,7 @@ memory_bank = np.zeros(2**32 // 8, dtype=np.uint64)
 addr1 =0#0
 size1 =16#
 addr2=1000
-size2=8#136
+size2=136
 
 for i in range(0,20):
     memory_bank[i]=1+i
@@ -24,35 +24,35 @@ print("mem_bank:",memory_bank)
 vm = VM(request_port, response_port, memory_bank)
 
 
-# req1 = mem_request("read", addr1, None, size1)
-# req2 = mem_request("read", addr2, None, size2)
-# request_port.append(req1)
-# request_port.append(req2)
-# count = 0
-# while count < 2:
-#     vm.one_cycle()
-#     if response_port:
-#         for resp in response_port:
-#             print(resp.data)
-#         # Process the next response entry
-#         response = response_port.popleft()
-#         print("Response form VM:", response.data)
-#         # Do something with the response here
-#         count += 1
-#         print("Response count:", count)
-data=[3,4]
-req1 = mem_request("write", addr1,data, size1)
+req1 = mem_request("read", addr1, None, size1)
+req2 = mem_request("read", addr2, None, size2)
 request_port.append(req1)
-for req in request_port:
-            print(req.data)
+request_port.append(req2)
 count = 0
-while count < 53:
-    # Do something here, such as calling a method or performing a computation
+while count < 2:
     vm.one_cycle()
-    count += 1
-print("mem_bank:",memory_bank)
-# while not response_port:
+    if response_port:
+        for resp in response_port:
+            print(resp.data)
+        # Process the next response entry
+        response = response_port.popleft()
+        print("Response form VM:", response.data)
+        # Do something with the response here
+        count += 1
+        print("Response count:", count)
+
+# data=[3,4]
+# req1 = mem_request("write", addr1,data, size1)
+# request_port.append(req1)
+# for req in request_port:
+#             print(req.data)
+# count = 0
+# while count < 53:
+#     # Do something here, such as calling a method or performing a computation
 #     vm.one_cycle()
+#     count += 1
+# print("mem_bank:",memory_bank)
+
 
 print("//-------------------Response port---------------------//")
 

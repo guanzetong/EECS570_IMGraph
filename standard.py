@@ -9,10 +9,11 @@ class event:
 
 class mem_request:
     
-    def __init__(self, cmd, addr, data):
+    def __init__(self, cmd, addr, data,size):
         self.cmd  = cmd
         self.addr = addr
         self.data = data
+        self.size =size
         
         
 class mem_response:

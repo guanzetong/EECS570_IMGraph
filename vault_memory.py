@@ -22,8 +22,6 @@ class VM:
         # https://www.crucial.com/articles/about-memory/difference-between-speed-and-latency Clock Cycle Time=0.42ns   
         self.burst_delay = 0   #T_CAS=40 cycles=16.8ns=17 cycles if hits, T_RCD=39 cycles=16.38=17cycles, T_RP=39 cycles=17cycles
         self.request_processing = False
-        self.Read_Data_mem = 0
-        self.Read_Data_mem_size=0
         self.first_request = True
         self.cmd=0
         self.data=0
@@ -44,16 +42,12 @@ class VM:
             print("//-------------------Accessing Reading Request Finial cycle-----------------------//")
             Read_Data= np.zeros(16, dtype=np.uint64)
 
-            for i in range(self.Read_Data_mem_size):
-                # print("Final : size of self.Read_Data_mem", self.Read_Data_mem_size,"i:",i)
-                Read_Data[i%16]=self.Read_Data_mem[i]
-                # print("Final : Read_Data Adding:  ", Read_Data)
+            for i in range(math.ceil(self.size/8)):
+                Read_Data[i%16]=self.memory_bank[(self.addr // 8 + i)]
                 if(i%15==0 and i!=0 ):
-                    # print("Read_Data Output:",Read_Data)
+                    print("Read_Data Output:",Read_Data,"i:",i)
                     self.response_port.append(mem_response(Read_Data))
-
                     Read_Data= np.zeros(16, dtype=np.uint64)
-                    Read_Data[i % 15] = self.Read_Data_mem[i]
             if len(Read_Data) > 0:
                 self.response_port.append(mem_response(Read_Data))
             self.request_processing=False
@@ -81,7 +75,6 @@ class VM:
         print("//-----------------------------------Dealing with One Request---------------------------------//")
 
         print("Processing Request:","command:",self.cmd,"addr in bytes:",req.addr,"size in bytes:",req.size,"Data:",req.data)
-        # cmd=req.cmd
         self.cmd=req.cmd
         self.addr=req.addr   #assume in bytes
         self.data=req.data
@@ -92,10 +85,6 @@ class VM:
 
         #read request
         if self.cmd=="read":
-            # overall reading data size needed in array
-            self.Read_Data_mem = np.zeros(math.ceil(self.size * 8 / 64), dtype=np.uint64)
-            self.Read_Data_mem_size = math.ceil(self.size * 8 / 64)
-            print("Size of self.Read_Data_mem:", math.ceil(self.size * 8 / 64))
             # calculate need how many Bursts, round up vaule, evey burst can deal with 128 bytes
             self.burst_num = math.ceil(self.size / self.mem_bus_bandwidth)
             print("How many Burst request needed:", self.burst_num)
@@ -190,14 +179,6 @@ class VM:
                         print("i is:", i, "total burst delay is :", self.burst_delay)
             print("Burst_delay is :",self.burst_delay )
             print("//----------------End of Calculating Total Delay-------------------//")
-            print("//------------Reading Data from Vault Memory to self.Read_Data_mem to store-------------------//")
-            # read Data from memory to Read_Data_mem one time
-            for i in range(math.ceil(self.size/8)):
-                        self.Read_Data_mem[i]=self.memory_bank[(self.addr//8+i)]
-            print("Read_Data_mem:",self.Read_Data_mem)         
-            print("//--------End of Reading Data from Vault Memory to self.Read_Data_mem to store-------------------//")
-
-
         #write request
         elif self.cmd=="write":
 
