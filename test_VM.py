@@ -11,7 +11,7 @@ response_port = deque()
 memory_bank = np.zeros(2**32 // 8, dtype=np.uint64)
 # Test a read request
 addr1 =0#0
-size1 =16#
+size1 =136#
 addr2=1000
 size2=136
 
@@ -29,7 +29,9 @@ req2 = mem_request("read", addr2, None, size2)
 request_port.append(req1)
 request_port.append(req2)
 count = 0
-while count < 2:
+# for i in range(60):
+#     vm.one_cycle()
+while count < 4:
     vm.one_cycle()
     if response_port:
         for resp in response_port:
