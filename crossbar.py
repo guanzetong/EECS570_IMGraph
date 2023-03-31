@@ -6,9 +6,9 @@ class round_robin_xbar:
 
     def __init__(self, in_port_list = [deque()], out_port_list = [deque()], idx_ranges = [], num_stages = 1):
         # Reconfigurable parameters
-        assert out_port_list.size() == idx_ranges.size()
-        self.num_input = in_port_list.size()
-        self.num_output = out_port_list.size()
+        assert len(out_port_list) == len(idx_ranges)
+        self.num_input =len(in_port_list)
+        self.num_output = len(out_port_list)
         if num_stages <= 0:
             self.num_stages = 1
         else:
@@ -47,12 +47,17 @@ class round_robin_xbar:
                 continue
             # event destination index decides output channel
             incoming_events.append(self.in_port_list[input_idx].pop())
+
+
             for output_idx in range(self.num_output):
-                if self.idx_ranges[output_idx][0] < incoming_events[input_idx].idx and self.idx_ranges[output_idx][1] > incoming_events[input_idx].idx:
+                if self.idx_ranges[output_idx][0] <= incoming_events[input_idx].idx and self.idx_ranges[output_idx][1] >= incoming_events[input_idx].idx:
                     self.arb_request[output_idx] = self.arb_request[output_idx] | np.uint64(1 << input_idx)
                     break
+        for i in incoming_events:
+            print("incoming event have: index:", i.idx, "val:", i.val)
+        for i in range(self.num_output):
+            print("arb_request[output_idx]:",self.arb_request[i] )
 
-        # Output Arbiters
 
         # Clear grants in the previous cycle
         self.arb_grant = np.zeros(self.num_output, dtype=np.uint64)
@@ -78,6 +83,7 @@ class round_robin_xbar:
                 else:
                     shifted = shifted >> 1
 
+
         for output_idx in range(self.num_output):
             if self.arb_grant[output_idx] == 0:
                 self.xbar_stages[output_idx].append(None)
@@ -102,7 +108,7 @@ class round_robin_xbar:
         self.arb_mask = copy.deepcopy(self.arb_mask_n)
 
         # Pipelining
-        if len(self.xbar_stages[0] > self.num_stages):
+        if len(self.xbar_stages[0]) > self.num_stages:
             for output_idx in range(self.num_output):
                 outgoing_event = self.xbar_stages[output_idx].pop()
                 if outgoing_event != None:
