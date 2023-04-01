@@ -19,14 +19,14 @@ class round_robin_xbar:
         self.idx_ranges = idx_ranges
 
         # Arbiter internal signals (combinational)
-        self.arb_request = np.zeros(self.num_output, dtype=np.uint64)
-        self.arb_mask = np.zeros(self.num_output, dtype=np.uint64)
-        self.arb_mask_n = np.zeros(self.num_output, dtype=np.uint64)
-        self.init_mask = np.uint64(2 ** self.num_input - 1)
+        self.arb_request = np.zeros(self.num_output, dtype=np.uint32)
+        self.arb_mask = np.zeros(self.num_output, dtype=np.uint32)
+        self.arb_mask_n = np.zeros(self.num_output, dtype=np.uint32)
+        self.init_mask = np.uint32(2 ** self.num_input - 1)
         for output_idx in range(self.num_output):
             self.arb_mask[output_idx] = self.init_mask  # masks are initialized to all 1s
             self.arb_mask_n[output_idx] = self.init_mask  # masks are initialized to all 1s
-        self.arb_grant = np.zeros(self.num_output, dtype=np.uint64)
+        self.arb_grant = np.zeros(self.num_output, dtype=np.uint32)
         
         # Pipeline stages
         self.xbar_stages = []
@@ -38,7 +38,7 @@ class round_robin_xbar:
         # Input Switches
 
         # Clear requests in the previous cycle
-        self.arb_request = np.zeros(self.num_output, dtype=np.uint64)
+        self.arb_request = np.zeros(self.num_output, dtype=np.uint32)
 
         # Iterate through the inputs and route the requests to output channels
         incoming_events = []
@@ -46,12 +46,12 @@ class round_robin_xbar:
             if len(self.in_port_list[input_idx]) == 0:
                 continue
             # event destination index decides output channel
-            incoming_events.append(self.in_port_list[input_idx].pop())
+            incoming_events.append(self.in_port_list[input_idx].popleft())
 
 
             for output_idx in range(self.num_output):
                 if self.idx_ranges[output_idx][0] <= incoming_events[input_idx].idx and self.idx_ranges[output_idx][1] >= incoming_events[input_idx].idx:
-                    self.arb_request[output_idx] = self.arb_request[output_idx] | np.uint64(1 << input_idx)
+                    self.arb_request[output_idx] = self.arb_request[output_idx] | np.uint32(1 << input_idx)
                     break
         for i in incoming_events:
             print("incoming event have: index:", i.idx, "val:", i.val)
@@ -60,7 +60,7 @@ class round_robin_xbar:
 
 
         # Clear grants in the previous cycle
-        self.arb_grant = np.zeros(self.num_output, dtype=np.uint64)
+        self.arb_grant = np.zeros(self.num_output, dtype=np.uint32)
 
         # Iterate through the outputs and arbitrate
         for output_idx in range(self.num_output):
@@ -70,15 +70,15 @@ class round_robin_xbar:
                 continue
 
             masked = self.arb_mask[output_idx] & self.arb_request[output_idx]
-            shifted = np.uint64(0)
+            shifted = np.uint32(0)
             if masked == 0:
                 shifted = self.arb_request[output_idx]
             else:
                 shifted = masked
 
             for req_idx in range(self.num_input):
-                if shifted & np.uint64(1) == 1:
-                    self.arb_grant[output_idx] = np.uint64(1 << req_idx)
+                if shifted & np.uint32(1) == 1:
+                    self.arb_grant[output_idx] = np.uint32(1 << req_idx)
                     break
                 else:
                     shifted = shifted >> 1
@@ -89,12 +89,12 @@ class round_robin_xbar:
                 self.xbar_stages[output_idx].append(None)
             else:
                 for input_idx in range(self.num_input):
-                    if self.arb_grant[output_idx] & np.uint64(1 << input_idx) != 0:
+                    if self.arb_grant[output_idx] & np.uint32(1 << input_idx) != 0:
                         self.xbar_stages[output_idx].append(incoming_events[input_idx])
                         break
 
         # Update mask
-        self.arb_mask_n = np.zeros(self.num_output, dtype=np.uint64)
+        self.arb_mask_n = np.zeros(self.num_output, dtype=np.uint32)
         for output_idx in range(self.num_output):
             arb_grant_tmp = self.arb_grant[output_idx]
             if arb_grant_tmp == 0:
@@ -112,4 +112,4 @@ class round_robin_xbar:
             for output_idx in range(self.num_output):
                 outgoing_event = self.xbar_stages[output_idx].pop()
                 if outgoing_event != None:
-                    self.out_port_list[output_idx].append()
+                    self.out_port_list[output_idx].append(outgoing_event)

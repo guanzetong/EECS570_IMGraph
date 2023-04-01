@@ -8,7 +8,7 @@ event1_2=event(idx=2,val=1)
 event2_1=event(idx=3,val=2)
 event2_2=event(idx=4,val=3)
 event3_1=event(idx=5,val=4)
-event3_2=event(idx=5,val=5)
+event3_2=event(idx=6,val=5)
 event4_1=event(idx=7,val=6)
 event4_2=event(idx=8,val=7)
 
