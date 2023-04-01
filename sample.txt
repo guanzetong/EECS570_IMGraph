@@ -1,0 +1,16 @@
+5       # num of vertex in the graph
+0       # start of ptr array
+2
+3
+5
+6
+7       # end of ptr array
+1       # start of neighbor array
+2
+3
+1
+3
+4
+2       # end of neighbor array
+
+

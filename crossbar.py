@@ -19,6 +19,9 @@ class round_robin_xbar:
         self.idx_ranges = idx_ranges
 
         # Arbiter internal signals (combinational)
+        self.incoming_events = []
+        for i in range(self.num_input):
+            self.incoming_events.append(None)
         self.arb_request = np.zeros(self.num_output, dtype=np.uint32)
         self.arb_mask = np.zeros(self.num_output, dtype=np.uint32)
         self.arb_mask_n = np.zeros(self.num_output, dtype=np.uint32)
@@ -41,19 +44,19 @@ class round_robin_xbar:
         self.arb_request = np.zeros(self.num_output, dtype=np.uint32)
 
         # Iterate through the inputs and route the requests to output channels
-        incoming_events = []
         for input_idx in range(self.num_input):
             if len(self.in_port_list[input_idx]) == 0:
                 continue
             # event destination index decides output channel
-            incoming_events.append(self.in_port_list[input_idx].popleft())
+            if self.incoming_events[input_idx] == None:
+                self.incoming_events[input_idx] = self.in_port_list[input_idx].popleft()
 
 
             for output_idx in range(self.num_output):
-                if self.idx_ranges[output_idx][0] <= incoming_events[input_idx].idx and self.idx_ranges[output_idx][1] >= incoming_events[input_idx].idx:
+                if self.idx_ranges[output_idx][0] <= self.incoming_events[input_idx].idx and self.idx_ranges[output_idx][1] >= self.incoming_events[input_idx].idx:
                     self.arb_request[output_idx] = self.arb_request[output_idx] | np.uint32(1 << input_idx)
                     break
-        for i in incoming_events:
+        for i in self.incoming_events:
             print("incoming event have: index:", i.idx, "val:", i.val)
         for i in range(self.num_output):
             print("arb_request[output_idx]:",self.arb_request[i] )
@@ -90,7 +93,8 @@ class round_robin_xbar:
             else:
                 for input_idx in range(self.num_input):
                     if self.arb_grant[output_idx] & np.uint32(1 << input_idx) != 0:
-                        self.xbar_stages[output_idx].append(incoming_events[input_idx])
+                        self.xbar_stages[output_idx].append(self.incoming_events[input_idx])
+                        self.incoming_events[input_idx] = None
                         break
 
         # Update mask
@@ -110,6 +114,6 @@ class round_robin_xbar:
         # Pipelining
         if len(self.xbar_stages[0]) > self.num_stages:
             for output_idx in range(self.num_output):
-                outgoing_event = self.xbar_stages[output_idx].pop()
+                outgoing_event = self.xbar_stages[output_idx].popleft()
                 if outgoing_event != None:
                     self.out_port_list[output_idx].append(outgoing_event)

@@ -33,7 +33,7 @@ in_port_list[1]=event2_deque
 in_port_list[2]=event3_deque
 in_port_list[3]=event4_deque
 out_port_list = [deque() for i in range(4)]
-idx_ranges = [[1,2],[3,4],[5,6],[7,8]]
+idx_ranges = [[1,8],[9,10],[11,12],[13,14]]
 rr_xbar=round_robin_xbar(in_port_list,out_port_list,idx_ranges,1);
 # for idx,in_idex in enumerate(in_port_list):
 #     print("in_idex is :", idx, "in_port_list:")
