@@ -1,0 +1,5 @@
+Download soc-LiveJournal1.adj from google drive
+
+To create divided(256= 32 vault mem * 8 HMC) CSR format files of .adj file, Running divide_graph.py file to get output_files directory
+
+To delete output_files directory by running delete_output_files.py
