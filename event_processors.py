@@ -39,7 +39,7 @@ class EP_h1:
         Return:
         vault_idx: idx of related vault (from 0 to 31)
         '''
-        vault_capacity = (self.ep_idx_ranges[1]-self.ep_idx_ranges[0]) // 32
+        vault_capacity = (self.ep_idx_ranges[1]-self.ep_idx_ranges[0]) // 32 + 1
         vault_index = [Vid-self.ep_idx_ranges[0]]// vault_capacity
         return vault_index
     ## deque().append(vid)
@@ -47,12 +47,16 @@ class EP_h1:
     ## foreach
 
     def vertex_property_addr(self, Vid):
+        return Vid
         pass
 
     def vertex_st_addr(self, Vid):
+        return Vid + 10000
         pass
 
     def vertex_neighbor_addr(self, Vid):
+        vault_num = self.alloc_vault(Vid)
+        return self.vault_mem[vault_num].response_port.popleft()
         pass
 
     def allocate_event_vault(self):
@@ -72,11 +76,11 @@ class EP_h1:
           self.vault_mem[vault_num].request_port.append(req_v_st)
           return vertex_id, delta
 
-    def reduce(old_value, delta=0.85, func='pagerank'):
+    def reduce(old_value, delta=0.85, func='pagerank'): #delta = allocate_event_vault()[1]
         '''
         input:
         func: which algorithm
-        old_value: stale vertex property in vm
+        old_value: stale vertex property in vm          # use read_vp function
         return:
         new_value of vertex property
         '''
@@ -96,11 +100,12 @@ class EP_h1:
            return None
         else:
             Vp = self.vault_mem[vault_num].response_port.popleft()
-            return Vp
+            return Vp       #vp is a class
 
-    def Update_VP(self, Vid, Vp_addr, delta, func='pagerank'):
+    def Update_VP(self, Vid, delta, func='pagerank'):
         '''
         read mem.repsone() to get vertex property, use reduce function to update
+        delta = allocate_event_vault()[1]
         '''
         
         Vp_old = self.read_VP(Vid)
@@ -112,9 +117,10 @@ class EP_h1:
         self.vault_mem[vault_num].request_port.append(req_w_Vp)
         return None
 
-    def get_st_addr(self, Vid):
+    def get_edge_num(self, Vid):
         '''
         read response port to get start address and create a request to read neighbor
+        return the number of edge of this vertex
         '''
         vault_num = self.alloc_vault(Vid)
         if len(self.vault_mem[vault_num].response_port) == 0:
@@ -129,12 +135,17 @@ class EP_h1:
             return n
 
     def Propagate(delta, N_src, func='pagerank', beta=0.85):
+        '''
+        delta = reduce(read_vp(), allocate_event_vault()[1])
+        N_src = get_edge_num(Vid)
+        '''
+         
         if func.lower() == 'pagerank':
             new_value = beta*delta/N_src
         elif func.lower() == 'adsorption':
             new_value = beta*delta
         elif func.lower() =='comp' or func.lower() =='sssp':
-            new_value = delta
+            new_value = delta + 1
         elif func.lower() == 'bfs':
             new_value = 0
         else:
@@ -149,7 +160,7 @@ class EP_h1:
         use propagate function to create new event
         input:
         beta: dumping factor
-        N_src: number of neighbors of VI
+        N_src: number of neighbors of VI, N_src = get_edge_num(self, Vid)
         VI_neighor: list of VI's neighbor
         delta: delta of VI from EQ
         Return:
@@ -158,16 +169,16 @@ class EP_h1:
         #read vault_mem[x].respond_port.popleft()//64 bit neighbour vertex_id
         #propogate function => new_delta
         #self.eq_o.respond_port.append(event(vertex_id, new_delta))
-        if N_src == 0 or delta < threshold or count >= N_src:
-            count = 0
-            return count
+        if N_src == 0 or abs(delta) <= threshold or count >= N_src:
+            #count = 0
+            return count + 1
         else:
             if count < N_src:
                 new_delta = self.Propagate(delta, N_src, func, beta) # function of alg
                 new_Vid = self.vault_mem[vault_num].response_port.popleft()
                 self.eq_o.respond_port.append(event(new_Vid,new_delta))
                 count +=1
-            elif count == N_src-1:
+            elif count == N_src:
                 new_delta = self.Propagate(delta, N_src, func, beta) # function of alg
                 self.eq_o.respond_port.append(event(new_Vid,new_delta))
                 count = 0
@@ -175,6 +186,10 @@ class EP_h1:
     
     #to do
     def initial(self, offset_vp, offset_vault, func='pagerank', beta=0.85):
+        '''
+        offset_vault = 
+        offset_vp = 
+        '''
         if func.lower() == "pagerank":
             for i in range(32):
                 self.vault_mem[offset_vault*i:offset_vault*i+offset_vp] = 0
