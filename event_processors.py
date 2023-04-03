@@ -203,8 +203,29 @@ class EP_h1:
     def forward_message():
         pass
 
-    def one_cycle():
-        pass
+    def one_cycle(self):
+        # feed an event from port and make read req for Vp and St_addr
+        # now the # of event is 1, depend on crossbar
+        (Vid, delta) = self.allocate_event_vault()
+        ####
+        # read data from response port of vm in order
+        ###
+        # use Vp
+        Vp = self.read_VP(Vid)
+        # use St_addr and make read req for neighbors
+        n = self.get_edge_num(Vid)
+        # update Vp(making a write req for Vp)
+        self.Update_VP(Vid, delta, func='pagerank')
+        # propagate new event
+        for i in range(32):
+            if len(self.vault_mem[i].response()) == 0:
+                count = 0
+            elif(count <= n):
+                count = self.PropagateNewEvent(N_src=n, delta=delta, Vid=Vid, vault_num=i, count=count, beta=0.85, func='pagerank', threshold=0)
+        return None
+
+
+
 
     #def allocate_event_vault(self):
     #   if len(self.ep_i) == 0:
