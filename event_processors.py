@@ -7,7 +7,7 @@ from standard import mem_request, mem_response, event
 class EP_h1:
     
     def __init__(self, eq_i, eq_o, ep_0_i, ep_0_o, ep_1_i, ep_1_o,
-                 ep_idx_ranges, num_vaults):
+                 ep_idx_ranges, num_vaults, func):
         # Variables
         # eq_i/eq_o: input/output deque with event queues
         # ep_X_i/ep_X_o: input/output deque with adjacent event processors
@@ -30,7 +30,20 @@ class EP_h1:
             vault_mem = VM(request_port, response_port)
             self.vault_mem.append(vault_mem)
 
-        # todo initial
+        # Initialize vp of each vault based on algorithm
+        vp_num = 100
+        vp_addr = 10
+        if func.lower() == "pagerank":
+            for i in range(32):
+                for j in range(vp_num):
+                    req = mem_request("write", vp_addr+j, 0)
+                    self.vault_mem[i].request_port.append(req)
+
+        elif func.lower() == 'sssp' or func.lower() == 'bfs':
+            for i in range(32):
+                for j in range(vp_num):
+                    req = mem_request("write", vp_addr+j, float('inf'))
+                    self.vault_mem[i].request_port.append(req)
 
     def alloc_vault(self, Vid):
         '''
@@ -185,20 +198,20 @@ class EP_h1:
             return count
     
     #to do
-    def initial(self, offset_vp, offset_vault, func='pagerank', beta=0.85):
-        '''
-        offset_vault = 
-        offset_vp = 
-        '''
-        if func.lower() == "pagerank":
-            for i in range(32):
-                self.vault_mem[offset_vault*i:offset_vault*i+offset_vp] = 0
-            delta_i = 1-beta
-        elif func.lower() == 'sssp' or func.lower() == 'bfs':
-            for i in range(32):
-                self.vault_mem[offset_vault*i:offset_vault*i+offset_vp] = float('inf')
-            delta_i = 0
-        return self.vault_mem, delta_i
+    # def initial(self, offset_vp, offset_vault, func='pagerank', beta=0.85):
+    #     '''
+    #     offset_vault = 
+    #     offset_vp = 
+    #     '''
+    #     if func.lower() == "pagerank":
+    #         for i in range(32):
+    #             self.vault_mem[offset_vault*i:offset_vault*i+offset_vp] = 0
+    #         delta_i = 1-beta
+    #     elif func.lower() == 'sssp' or func.lower() == 'bfs':
+    #         for i in range(32):
+    #             self.vault_mem[offset_vault*i:offset_vault*i+offset_vp] = float('inf')
+    #         delta_i = 0
+    #     return self.vault_mem, delta_i
 
     def forward_message():
         pass
