@@ -190,7 +190,8 @@ class EP_h1:
         #self.eq_o.append(event(vertex_id, new_delta))
         if N_src == 0 or abs(Vp_new-Vp) <= threshold or count >= N_src:
             #count = 0
-            return count + 1
+            self.busy = False
+            return count + 1, self.busy
         else:
             if count < N_src:
                 self.busy = True
