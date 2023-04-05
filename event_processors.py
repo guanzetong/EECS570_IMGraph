@@ -7,7 +7,7 @@ from standard import mem_request, mem_response, event
 class EP_h1:
     
     def __init__(self, eq_i, eq_o, ep_0_i, ep_0_o, ep_1_i, ep_1_o,
-                 ep_idx_ranges, num_vaults, func):
+                 ep_idx_ranges, num_vaults, func, busy):
         # Variables
         # eq_i/eq_o: input/output deque with event queues
         # ep_X_i/ep_X_o: input/output deque with adjacent event processors
@@ -22,6 +22,7 @@ class EP_h1:
         self.ep_1_o = ep_1_o
         self.ep_idx_ranges = ep_idx_ranges
         self.func = func
+        self.busy = False
         
         # Instantiate vault memories
         self.vault_mem = []
@@ -55,8 +56,6 @@ class EP_h1:
         '''
         vault_capacity = (self.ep_idx_ranges[1]-self.ep_idx_ranges[0]) // 32 + 1
         vault_index = (Vid-self.ep_idx_ranges[0])// vault_capacity
-        print("vault_capacity = (alloc_vault)", vault_capacity)
-        print("vault_index = (alloc_vault)", vault_index)
         return int(vault_index)
     ## deque().append(vid)
     ## reduce,propagate from deque (32)
@@ -64,16 +63,13 @@ class EP_h1:
 
     def vertex_property_addr(self, Vid):
         return Vid
-        pass
 
     def vertex_st_addr(self, Vid):
         return int(Vid + 10000)
-        pass
 
     def vertex_neighbor_addr(self, Vid):
         vault_num = self.alloc_vault(Vid)
-        return self.vault_mem[vault_num].response_port.popleft()
-        pass
+        return int(Vid + 20000)
 
     def allocate_event_vault(self):
       if len(self.eq_i) == 0:
@@ -157,7 +153,7 @@ class EP_h1:
             self.vault_mem[vault_num].request_port.append(req_neighbor)
             return n
 
-    def Propagate(delta, N_src, func='pagerank', beta=0.85):
+    def Propagate(self, delta, N_src, func='pagerank', beta=0.85):
         '''
         delta = reduce(read_vp(), allocate_event_vault()[1])
         N_src = get_edge_num(Vid)
@@ -178,7 +174,7 @@ class EP_h1:
 #####
 # pagerank: delta(from eq) < threshold, not do propagate
 ####
-    def PropagateNewEvent(self, N_src, delta, Vid, vault_num, count=0, beta=0.85, func='pagerank', threshold=0):
+    def PropagateNewEvent(self, N_src, delta, Vp_new, Vp, vault_num, count=0, beta=0.85, func='pagerank', threshold=0):
         '''
         use propagate function to create new event
         input:
@@ -191,40 +187,26 @@ class EP_h1:
         '''
         #read vault_mem[x].respond_port.popleft()//64 bit neighbour vertex_id
         #propogate function => new_delta
-        #self.eq_o.respond_port.append(event(vertex_id, new_delta))
-        if N_src == 0 or abs(delta) <= threshold or count >= N_src:
+        #self.eq_o.append(event(vertex_id, new_delta))
+        if N_src == 0 or abs(Vp_new-Vp) <= threshold or count >= N_src:
             #count = 0
             return count + 1
         else:
             if count < N_src:
+                self.busy = True
                 new_delta = self.Propagate(delta, N_src, func, beta) # function of alg
                 print('new_delta after propagate:', new_delta)
                 new_Vid = self.vault_mem[vault_num].response_port.popleft()
                 print('new_Vid after propagate:', new_Vid)
-                self.eq_o.respond_port.append(event(new_Vid,new_delta))
+                self.eq_o.append(event(new_Vid,new_delta))
                 count +=1
                 print('count: ',count)
             elif count == N_src:
+                self.busy = False
                 new_delta = self.Propagate(delta, N_src, func, beta) # function of alg
-                self.eq_o.respond_port.append(event(new_Vid,new_delta))
+                self.eq_o.append(event(new_Vid,new_delta))
                 count = 0
-            return count
-    
-    #to do
-    # def initial(self, offset_vp, offset_vault, func='pagerank', beta=0.85):
-    #     '''
-    #     offset_vault = 
-    #     offset_vp = 
-    #     '''
-    #     if func.lower() == "pagerank":
-    #         for i in range(32):
-    #             self.vault_mem[offset_vault*i:offset_vault*i+offset_vp] = 0
-    #         delta_i = 1-beta
-    #     elif func.lower() == 'sssp' or func.lower() == 'bfs':
-    #         for i in range(32):
-    #             self.vault_mem[offset_vault*i:offset_vault*i+offset_vp] = float('inf')
-    #         delta_i = 0
-    #     return self.vault_mem, delta_i
+            return count, self.busy
 
     def forward_message():
         pass
@@ -232,9 +214,10 @@ class EP_h1:
     def one_cycle(self):
         # feed an event from port and make read req for Vp and St_addr
         # now the # of event is 1, depend on crossbar
-        if (len(self.eq_i) != 0):
+        if (len(self.eq_i) != 0) and not self.busy:
             (Vid, delta) = self.allocate_event_vault()# !read vid, and read two start address(size = 2)
         ####
+            count = 0
         # read data from response port of vm in order
         ###
         # use Vp
@@ -252,7 +235,8 @@ class EP_h1:
                 if len(self.vault_mem[i].response_port) == 0:
                     count = 0
                 else:
-                    count = self.PropagateNewEvent(N_src=n, delta=delta, Vid=Vid, vault_num=i, count=count, beta=0.85, func='pagerank', threshold=0)
+                    count, busy = self.PropagateNewEvent(N_src=n, delta=delta, Vp_new=Vp_new, Vp=Vp, vault_num=i, count=count, beta=0.85, func=self.func, threshold=0)
+                    print('count in propagate: ',count)
             return None
         else:
             return None
