@@ -8,7 +8,7 @@ request_port = deque()
 response_port = deque()
 
 # Create a memory bank for testing
-memory_bank = np.zeros(2**32 // 8, dtype=np.uint64)
+memory_bank = np.zeros(2**32 // 4, dtype=np.uint32)
 # Test a read request
 addr1 =0#0
 size1 =136#
@@ -17,8 +17,8 @@ size2=136
 
 for i in range(0,20):
     memory_bank[i]=1+i
-for i in range(0,size2//8):
-    memory_bank[1000//8+i]=1+i
+for i in range(0,size2//4):
+    memory_bank[1000//4+i]=1+i
 print("mem_bank:",memory_bank)
 # Create a VM instance for testing
 vm = VM(request_port, response_port, memory_bank)
