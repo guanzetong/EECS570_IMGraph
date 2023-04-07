@@ -7,7 +7,7 @@ from standard import mem_request, mem_response, event
 class EP_h1:
     
     def __init__(self, eq_i, eq_o, ep_0_i, ep_0_o, ep_1_i, ep_1_o,
-                 ep_idx_ranges, num_vaults, func, busy, buffer, count):
+                 ep_idx_ranges, num_vaults, func):
         # Variables
         # eq_i/eq_o: input/output deque with event queues
         # ep_X_i/ep_X_o: input/output deque with adjacent event processors
@@ -15,6 +15,7 @@ class EP_h1:
         #   ep_idx_ranges[0..1] = [self, ep_0, ep_1]
         # busy: list of booleans
         # buffer: list of deque
+        # n: initial for neighbor number
         
         self.eq_i   = eq_i
         self.eq_o   = eq_o
@@ -27,10 +28,20 @@ class EP_h1:
         self.count = []
         self.busy = []
         self.buffer = []
+        self.n = []
+        self.delta = []
+        self.Vp = []
+        self.Vp_new = []
+        self.Vid = []
         for i in range(num_vaults):
             self.busy.append(False)
             self.buffer.append(deque())
             self.count.append(0)
+            self.n.append(0)
+            self.delta.append(0)
+            self.Vp.append(0)
+            self.Vp_new.append(0)
+            self.Vid.append(None)
         
         # Instantiate vault memories
         self.vault_mem = []
@@ -140,13 +151,12 @@ class EP_h1:
             return None
         return new_value
 
-    def read_VP(self, Vid):
-        vault_num = self.alloc_vault(Vid)
+    def read_VP(self, vault_num):
         if len(self.vault_mem[vault_num].response_port) == 0:
            print("No Vp")
            return None
         else:
-            Vp = self.vault_mem[vault_num].response_port.popleft()
+            Vp = self.vault_mem[vault_num].response_port.popleft().data
             print("Vp read from response_port:", Vp)
             return Vp       #vp is a class
 
@@ -181,8 +191,8 @@ class EP_h1:
            print("start addr is not ready")
            return None
         else:
-            St_1 = self.vault_mem[vault_num].response_port.popleft()
-            St_2 = self.vault_mem[vault_num].response_port.popleft()
+            St_1 = self.vault_mem[vault_num].response_port.popleft().data
+            St_2 = self.vault_mem[vault_num].response_port.popleft().data
             n = St_2 - St_1    # byte sized
             print("neighbor num: ",n)
             neighbor_addr = self.vertex_neighbor_addr(Vid)
@@ -215,10 +225,11 @@ class EP_h1:
         if Vp_new is None or Vp is None:
             return False
         elif abs(Vp_new-Vp) <= threshold:
+            print(f'Vp_new({Vp_new}) - Vp({Vp}) <= threshold({threshold})')
             return False
         else:
             return True
-    def PropagateNewEvent(self, N_src, delta, Vp_new, Vp, vault_num, count=0, beta=0.85, func='pagerank', threshold=0):
+    def PropagateNewEvent(self, N_src, delta, vault_num, count=0, beta=0.85, func='pagerank'):
         '''
         use propagate function to create new event
         input:
@@ -232,21 +243,30 @@ class EP_h1:
         #read vault_mem[x].respond_port.popleft()//64 bit neighbour vertex_id
         #propogate function => new_delta
         #self.eq_o.append(event(vertex_id, new_delta))
-        if count < N_src:
-            self.busy = True
-            new_delta = self.Propagate(delta, N_src, func, beta) # function of alg
-            print('new_delta after propagate:', new_delta)
-            new_Vid = self.vault_mem[vault_num].response_port.popleft()
-            print('new_Vid after propagate:', new_Vid)
-            self.eq_o.append(event(new_Vid,new_delta))
-            count +=1
-            print('count: ',count)
-        elif count == N_src:
-            self.busy = False
-            new_delta = self.Propagate(delta, N_src, func, beta) # function of alg
-            self.eq_o.append(event(new_Vid,new_delta))
-            count = 0
-        return count, self.busy, N_src
+        if N_src != None:
+            if count < N_src-1:
+                busy = True
+                new_delta = self.Propagate(delta, N_src, func, beta) # function of alg
+                new_Vid = self.vault_mem[vault_num].response_port.popleft().data
+                print('new_Vid after propagate:', new_Vid)
+                print('new_delta after propagate:', new_delta)
+                self.eq_o.append(event(np.uint64(new_Vid),np.uint64(new_delta)))
+                count +=1
+                print('count: ',count)
+            elif count == N_src-1:
+                busy = False
+                new_Vid = self.vault_mem[vault_num].response_port.popleft().data
+                print('new_Vid after propagate:', new_Vid)
+                new_delta = self.Propagate(delta, N_src, func, beta) # function of alg
+                print('new_delta after propagate:', new_delta)
+                self.eq_o.append(event(np.uint64(new_Vid),np.uint64(new_delta)))
+                print("finish last propagate")
+                count +=1
+            else:
+                count = 0
+                print("No further neighbor, waiting for new event")
+                busy = False
+        return count, busy, N_src
 
     def forward_message():
         pass
@@ -263,62 +283,44 @@ class EP_h1:
         
 
     def one_cycle(self, num_vaults):
-        # # feed an event from port and make read req for Vp and St_addr
-        # # now the # of event is 1, depend on crossbar
-        # if (len(self.eq_i) != 0) and not self.busy:
-        #     (Vid, delta) = self.allocate_event_vault_port()# !read vid, and read two start address(size = 2)
-        # ####
-        #     count = 0
-        # # read data from response port of vm in order
-        # ###
-        # # use Vp
-        #     Vp = self.read_VP(Vid)
-        #     print("Vp read in one cycle: ",Vp)
-        #     print("delta read in one cycle: ",delta)
-        #     print('func in one cycle', self.func)
-        #     # use St_addr and make read req for neighbors
-        #     n = self.get_edge_num(Vid)# !already send request to get all its neighboor!!!!!!!!!!!!!!!!
-        #     # update Vp(making a write req for Vp)
-        #     Vp_new = self.reduce(Vp, delta, self.func)
-        #     self.Update_VP(Vid,Vp_new)#! and update vp
-        # else:
-        #     pass
-        # # propagate new event
-        # for i in range(32):
-        #     if len(self.vault_mem[i].response_port) == 0:
-        #         count = 0
-        #     else:
-        #         count, self.busy = self.PropagateNewEvent(N_src=n, delta=delta, Vp_new=Vp_new, Vp=Vp, vault_num=i, count=count, beta=0.85, func=self.func, threshold=0)
-        #         print('count in propagate: ',count)
-        # return None
         incoming_events = []
         for j in range(len(self.eq_i)):
             incoming_events.append(self.eq_i.popleft())
         for i in range(num_vaults):
             # read events into buffer
-            self.buffer_event(i, list(self.eq_i))
+            self.buffer_event(i, incoming_events)
             if not self.busy[i]:
                 if (len(self.buffer[i]) != 0):
-                    (Vid, delta) = self.allocate_event_vault_buffer(i)
+                    (self.Vid[i], self.delta[i]) = self.allocate_event_vault_buffer(i)
                     self.busy[i] = True
+                    self.Vp[i] = None
+                    self.Vp_new[i] = None
+                    self.n[i] = None
                     print(f"vault[{i}] is reading event from buffer")
                 else:
                     pass
-                Vp = self.read_VP(Vid) # pop vp at once, return None if no response
-                Vp_new = self.reduce(Vp, delta, self.func) # return None if Vp is None
-                n = self.get_edge_num(Vid) # pop st1 st2 at once and read neighbors, return None if st1 st2 not ready
-                count = 0
-                self.Update_VP(Vid,Vp_new) # write Vp_new
-                # try use neighbor vp
-                if self.Propagate_condion(Vp_new, Vp, threshold=0): #make sure all data is ready
-                    if (len(self.vault_mem[i].response_port) != 0) and n != None:
-                        count[i], self.busy[i], n = self.PropagateNewEvent(N_src=n, delta=delta, Vp_new=Vp_new, Vp=Vp, vault_num=i, count=count[i], beta=0.85, func=self.func, threshold=0)
-                    else:
-                        pass
-
-            else:
-                count[i], self.busy[i], n = self.PropagateNewEvent(N_src=n, delta=delta, Vp_new=Vp_new, Vp=Vp, vault_num=i, count=count, beta=0.85, func=self.func, threshold=0)
-                print(f"vault[{i}] is busy on propagate, count={count[i]} , n={n} ")
+            else:# when busy not accept new event
+                if (self.Vp[i] == None): # keep fetching Vp
+                    self.Vp[i] = self.read_VP(i) # pop vp at once, return None if no response
+                    print('fetching Vp')
+                    if (self.Vp_new[i] == None):# Vp is ready
+                        self.Vp_new[i] = self.reduce(self.Vp[i], self.delta[i], self.func) # return None if Vp is None
+                        print(f"Vp is ready, Vp ={self.Vp[i]}, Vp_new ={self.Vp_new[i]}")
+                        self.Update_VP(self.Vid[i],self.Vp_new[i]) # write Vp_new
+                    else: pass
+                if (self.n[i] == None and self.Vid[i] !=None):
+                    print(f"fetching start address")
+                    self.n[i] = self.get_edge_num(self.Vid[i]) # try to pop st1 st2 at once and read neighbors, return None if st1 st2 not ready
+                else: # neighbor req emitted
+                    print(f"nerghbor number is {self.n[i]}, now is propagating")
+                    if self.Propagate_condion(self.Vp_new[i], self.Vp[i], threshold=0):
+                        if (len(self.vault_mem[i].response_port) != 0):
+                            self.count[i], self.busy[i], self.n[i] = self.PropagateNewEvent(N_src=self.n[i], delta=self.delta[i], vault_num=i, count=self.count[i], beta=0.85, func=self.func)
+                            print(f"propagating new event, count={self.count[i]}, n={self.n[i]}, busy:{self.busy[i]}")
+                        else:
+                            print(f"no neighbor data to propagate, busy:{self.busy[i]}")
+                            pass
+            print("no task to do, waiting new event")
             return None
 
 
