@@ -247,15 +247,15 @@ class EP_h1:
     def forward_message():
         pass
 
-    def buffer_event(self, Vid, incoming_event):
+    def buffer_event(self, buffer_idx, incoming_events):
         '''
         buffer events that aren't able to feed in EP
         '''
-        vault_idx = self.alloc_vault(Vid)
-        if self.busy[vault_idx]:
-            self.buffer[vault_idx].append(incoming_event)
-        else:
-            pass
+        for i in range(len(incoming_events)):
+            if self.alloc_vault(incoming_events[i].idx) == buffer_idx:
+                self.buffer[buffer_idx].append(incoming_events[i])
+        return None
+
         
 
     def one_cycle(self, num_vaults):
@@ -287,8 +287,12 @@ class EP_h1:
         #         count, self.busy = self.PropagateNewEvent(N_src=n, delta=delta, Vp_new=Vp_new, Vp=Vp, vault_num=i, count=count, beta=0.85, func=self.func, threshold=0)
         #         print('count in propagate: ',count)
         # return None
+        incoming_events = []
+        for j in range(len(self.eq_i)):
+            incoming_events.append(self.eq_i.popleft())
         for i in range(num_vaults):
-            # read new event if not busy, buffer takes priority
+            # read events into buffer
+            self.buffer_event(i, list(self.eq_i))
             if not self.busy[i]:
                 if (len(self.buffer[i]) != 0):
                     (Vid, delta) = self.allocate_event_vault_buffer(i)
