@@ -110,10 +110,12 @@ class EP_h1:
         # read vertex property request
         vp_addr = self.vertex_property_addr(Vid=vertex_id)
         req_vp = mem_request("read", vp_addr, 1)
+        print(f"reading vp: vp_addr={vp_addr}")
         self.vault_mem[vault_num].request_port.append(req_vp)
         # read vertex start address request
         v_st_addr = self.vertex_st_addr(Vid=vertex_id)
         req_v_st = mem_request("read", v_st_addr, 2)
+        print(f"reading start addr: st_addr={v_st_addr}")
         self.vault_mem[vault_num].request_port.append(req_v_st)
         return vertex_id, delta
 
@@ -163,6 +165,7 @@ class EP_h1:
             Vp_addr = self.vertex_property_addr(Vid)
             vault_num = self.alloc_vault(Vid)
             req_w_Vp = mem_request("write", Vp_addr, Vp_new)
+            print(f"writing Vp_new, Vp_new = {Vp_new}")
             self.vault_mem[vault_num].request_port.append(req_w_Vp)
         else:
             pass
@@ -175,6 +178,7 @@ class EP_h1:
         '''
         vault_num = self.alloc_vault(Vid)
         if len(self.vault_mem[vault_num].response_port) == 0:
+           print("start addr is not ready")
            return None
         else:
             St_1 = self.vault_mem[vault_num].response_port.popleft()
@@ -297,6 +301,7 @@ class EP_h1:
                 if (len(self.buffer[i]) != 0):
                     (Vid, delta) = self.allocate_event_vault_buffer(i)
                     self.busy[i] = True
+                    print(f"vault[{i}] is reading event from buffer")
                 else:
                     pass
                 Vp = self.read_VP(Vid) # pop vp at once, return None if no response
