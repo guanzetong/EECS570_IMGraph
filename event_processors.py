@@ -7,12 +7,14 @@ from standard import mem_request, mem_response, event
 class EP_h1:
     
     def __init__(self, eq_i, eq_o, ep_0_i, ep_0_o, ep_1_i, ep_1_o,
-                 ep_idx_ranges, num_vaults, func, busy):
+                 ep_idx_ranges, num_vaults, func, busy, buffer, count):
         # Variables
         # eq_i/eq_o: input/output deque with event queues
         # ep_X_i/ep_X_o: input/output deque with adjacent event processors
         # ep_idx_ranges: a list of [min, max] to specify the range assigned to this EP and adjacent EPs
         #   ep_idx_ranges[0..1] = [self, ep_0, ep_1]
+        # busy: list of booleans
+        # buffer: list of deque
         
         self.eq_i   = eq_i
         self.eq_o   = eq_o
@@ -22,7 +24,13 @@ class EP_h1:
         self.ep_1_o = ep_1_o
         self.ep_idx_ranges = ep_idx_ranges
         self.func = func
-        self.busy = False
+        self.count = []
+        self.busy = []
+        self.buffer = []
+        for i in range(num_vaults):
+            self.busy.append(False)
+            self.buffer.append(deque())
+            self.count.append(0)
         
         # Instantiate vault memories
         self.vault_mem = []
@@ -71,7 +79,7 @@ class EP_h1:
         vault_num = self.alloc_vault(Vid)
         return int(Vid + 20000)
 
-    def allocate_event_vault(self):
+    def allocate_event_vault_port(self):
       if len(self.eq_i) == 0:
            return None
       else: #get an event from ep_i deque
@@ -89,8 +97,27 @@ class EP_h1:
         req_v_st = mem_request("read", v_st_addr, 2)
         self.vault_mem[vault_num].request_port.append(req_v_st)
         return vertex_id, delta
+    
+    def allocate_event_vault_buffer(self, vault_idx):
+      if len(self.buffer[vault_idx]) == 0:
+           return None
+      else: #get an event from ep_i deque
+        a = self.buffer[vault_idx].popleft()
+        #   delta     = self.eq_i.popleft().val  #vault num is a result of the previous function
+        vertex_id = a.idx
+        delta = a.val
+        vault_num = self.alloc_vault(Vid=vertex_id)
+        # read vertex property request
+        vp_addr = self.vertex_property_addr(Vid=vertex_id)
+        req_vp = mem_request("read", vp_addr, 1)
+        self.vault_mem[vault_num].request_port.append(req_vp)
+        # read vertex start address request
+        v_st_addr = self.vertex_st_addr(Vid=vertex_id)
+        req_v_st = mem_request("read", v_st_addr, 2)
+        self.vault_mem[vault_num].request_port.append(req_v_st)
+        return vertex_id, delta
 
-    def reduce(self, old_value, delta, func): #delta = allocate_event_vault()[1]
+    def reduce(self, old_value, delta, func): #delta = allocate_event_vault_port()[1]
         '''
         input:
         func: which algorithm
@@ -98,14 +125,17 @@ class EP_h1:
         return:
         new_value of vertex property
         '''
-        if func.lower() == 'pagerank' or func.lower() == 'adsorption':
-            new_value = old_value + delta
-        elif func.lower() == 'sssp' or func.lower() == 'bfs':
-            new_value = min(old_value, delta)
-        elif func.lower() =='comp':
-            new_value = max(old_value, delta)
+        if old_value != None:
+            if func.lower() == 'pagerank' or func.lower() == 'adsorption':
+                new_value = old_value + delta
+            elif func.lower() == 'sssp' or func.lower() == 'bfs':
+                new_value = min(old_value, delta)
+            elif func.lower() =='comp':
+                new_value = max(old_value, delta)
+            else:
+                new_value = old_value + delta
         else:
-            new_value = old_value + delta
+            return None
         return new_value
 
     def read_VP(self, Vid):
@@ -121,7 +151,7 @@ class EP_h1:
     def Update_VP(self, Vid, Vp_new):
         '''
         read mem.repsone() to get vertex property, use reduce function to update
-        delta = allocate_event_vault()[1]
+        delta = allocate_event_vault_port()[1]
         '''
         
         #Vp_old = self.read_VP(Vid)
@@ -129,10 +159,13 @@ class EP_h1:
         #Vp_new = self.reduce(Vp, delta, func)
         print("Vp_new (after reduce): ",Vp_new)
         # write Vp_new to mem
-        Vp_addr = self.vertex_property_addr(Vid)
-        vault_num = self.alloc_vault(Vid)
-        req_w_Vp = mem_request("write", Vp_addr, Vp_new)
-        self.vault_mem[vault_num].request_port.append(req_w_Vp)
+        if Vp_new != None:
+            Vp_addr = self.vertex_property_addr(Vid)
+            vault_num = self.alloc_vault(Vid)
+            req_w_Vp = mem_request("write", Vp_addr, Vp_new)
+            self.vault_mem[vault_num].request_port.append(req_w_Vp)
+        else:
+            pass
         return None
 
     def get_edge_num(self, Vid):
@@ -146,7 +179,7 @@ class EP_h1:
         else:
             St_1 = self.vault_mem[vault_num].response_port.popleft()
             St_2 = self.vault_mem[vault_num].response_port.popleft()
-            n = St_2 - St_1
+            n = St_2 - St_1    # byte sized
             print("neighbor num: ",n)
             neighbor_addr = self.vertex_neighbor_addr(Vid)
             req_neighbor = mem_request("read", neighbor_addr, n)
@@ -155,7 +188,7 @@ class EP_h1:
 
     def Propagate(self, delta, N_src, func='pagerank', beta=0.85):
         '''
-        delta = reduce(read_vp(), allocate_event_vault()[1])
+        delta = reduce(read_vp(), allocate_event_vault_port()[1])
         N_src = get_edge_num(Vid)
         '''
          
@@ -174,6 +207,13 @@ class EP_h1:
 #####
 # pagerank: delta(from eq) < threshold, not do propagate
 ####
+    def Propagate_condion(self,Vp_new, Vp, threshold):
+        if Vp_new is None or Vp is None:
+            return False
+        elif abs(Vp_new-Vp) <= threshold:
+            return False
+        else:
+            return True
     def PropagateNewEvent(self, N_src, delta, Vp_new, Vp, vault_num, count=0, beta=0.85, func='pagerank', threshold=0):
         '''
         use propagate function to create new event
@@ -188,74 +228,94 @@ class EP_h1:
         #read vault_mem[x].respond_port.popleft()//64 bit neighbour vertex_id
         #propogate function => new_delta
         #self.eq_o.append(event(vertex_id, new_delta))
-        if N_src == 0 or abs(Vp_new-Vp) <= threshold or count >= N_src:
-            #count = 0
+        if count < N_src:
+            self.busy = True
+            new_delta = self.Propagate(delta, N_src, func, beta) # function of alg
+            print('new_delta after propagate:', new_delta)
+            new_Vid = self.vault_mem[vault_num].response_port.popleft()
+            print('new_Vid after propagate:', new_Vid)
+            self.eq_o.append(event(new_Vid,new_delta))
+            count +=1
+            print('count: ',count)
+        elif count == N_src:
             self.busy = False
-            return count + 1, self.busy
-        else:
-            if count < N_src:
-                self.busy = True
-                new_delta = self.Propagate(delta, N_src, func, beta) # function of alg
-                print('new_delta after propagate:', new_delta)
-                new_Vid = self.vault_mem[vault_num].response_port.popleft()
-                print('new_Vid after propagate:', new_Vid)
-                self.eq_o.append(event(new_Vid,new_delta))
-                count +=1
-                print('count: ',count)
-            elif count == N_src:
-                self.busy = False
-                new_delta = self.Propagate(delta, N_src, func, beta) # function of alg
-                self.eq_o.append(event(new_Vid,new_delta))
-                count = 0
-            return count, self.busy
+            new_delta = self.Propagate(delta, N_src, func, beta) # function of alg
+            self.eq_o.append(event(new_Vid,new_delta))
+            count = 0
+        return count, self.busy, N_src
 
     def forward_message():
         pass
 
-    def one_cycle(self):
-        # feed an event from port and make read req for Vp and St_addr
-        # now the # of event is 1, depend on crossbar
-        if (len(self.eq_i) != 0) and not self.busy:
-            (Vid, delta) = self.allocate_event_vault()# !read vid, and read two start address(size = 2)
-        ####
-            count = 0
-        # read data from response port of vm in order
-        ###
-        # use Vp
-            Vp = self.read_VP(Vid)
-            print("Vp read in one cycle: ",Vp)
-            print("delta read in one cycle: ",delta)
-            print('func in one cycle', self.func)
-            # use St_addr and make read req for neighbors
-            n = self.get_edge_num(Vid)# !already send request to get all its neighboor!!!!!!!!!!!!!!!!
-            # update Vp(making a write req for Vp)
-            Vp_new = self.reduce(Vp, delta, self.func)
-            self.Update_VP(Vid,Vp_new)#! and update vp
-            # propagate new event
-            for i in range(32):
-                if len(self.vault_mem[i].response_port) == 0:
-                    count = 0
-                else:
-                    count, busy = self.PropagateNewEvent(N_src=n, delta=delta, Vp_new=Vp_new, Vp=Vp, vault_num=i, count=count, beta=0.85, func=self.func, threshold=0)
-                    print('count in propagate: ',count)
-            return None
+    def buffer_event(self, Vid, incoming_event):
+        '''
+        buffer events that aren't able to feed in EP
+        '''
+        vault_idx = self.alloc_vault(Vid)
+        if self.busy[vault_idx]:
+            self.buffer[vault_idx].append(incoming_event)
         else:
+            pass
+        
+
+    def one_cycle(self, num_vaults):
+        # # feed an event from port and make read req for Vp and St_addr
+        # # now the # of event is 1, depend on crossbar
+        # if (len(self.eq_i) != 0) and not self.busy:
+        #     (Vid, delta) = self.allocate_event_vault_port()# !read vid, and read two start address(size = 2)
+        # ####
+        #     count = 0
+        # # read data from response port of vm in order
+        # ###
+        # # use Vp
+        #     Vp = self.read_VP(Vid)
+        #     print("Vp read in one cycle: ",Vp)
+        #     print("delta read in one cycle: ",delta)
+        #     print('func in one cycle', self.func)
+        #     # use St_addr and make read req for neighbors
+        #     n = self.get_edge_num(Vid)# !already send request to get all its neighboor!!!!!!!!!!!!!!!!
+        #     # update Vp(making a write req for Vp)
+        #     Vp_new = self.reduce(Vp, delta, self.func)
+        #     self.Update_VP(Vid,Vp_new)#! and update vp
+        # else:
+        #     pass
+        # # propagate new event
+        # for i in range(32):
+        #     if len(self.vault_mem[i].response_port) == 0:
+        #         count = 0
+        #     else:
+        #         count, self.busy = self.PropagateNewEvent(N_src=n, delta=delta, Vp_new=Vp_new, Vp=Vp, vault_num=i, count=count, beta=0.85, func=self.func, threshold=0)
+        #         print('count in propagate: ',count)
+        # return None
+        for i in range(num_vaults):
+            # read new event if not busy, buffer takes priority
+            if not self.busy[i]:
+                if (len(self.buffer[i]) != 0):
+                    (Vid, delta) = self.allocate_event_vault_buffer(i)
+                    self.busy[i] = True
+                else:
+                    pass
+                Vp = self.read_VP(Vid) # pop vp at once, return None if no response
+                Vp_new = self.reduce(Vp, delta, self.func) # return None if Vp is None
+                n = self.get_edge_num(Vid) # pop st1 st2 at once and read neighbors, return None if st1 st2 not ready
+                count = 0
+                self.Update_VP(Vid,Vp_new) # write Vp_new
+                # try use neighbor vp
+                if self.Propagate_condion(Vp_new, Vp, threshold=0): #make sure all data is ready
+                    if (len(self.vault_mem[i].response_port) != 0) and n != None:
+                        count[i], self.busy[i], n = self.PropagateNewEvent(N_src=n, delta=delta, Vp_new=Vp_new, Vp=Vp, vault_num=i, count=count[i], beta=0.85, func=self.func, threshold=0)
+                    else:
+                        pass
+
+            else:
+                count[i], self.busy[i], n = self.PropagateNewEvent(N_src=n, delta=delta, Vp_new=Vp_new, Vp=Vp, vault_num=i, count=count, beta=0.85, func=self.func, threshold=0)
+                print(f"vault[{i}] is busy on propagate, count={count[i]} , n={n} ")
             return None
 
 
 
+# worst: different vault
 
-    #def allocate_event_vault(self):
-    #   if len(self.ep_i) == 0:
-    #        return
-    #   else
-    #       vertex_id = self.ep_i.popleft().idx
-    #       delta     = self.ep_i.popleft().val//vault num is a result of the previous function
-    #       vault_mem = function()
-    #       v_addr = function(vertix_id)
-    #       req = mem_request("read", v_addr, 1)
-    #       vault_mem[vault_num].request_port.append(req)
-    #       
 
 class EP_h2:
     
