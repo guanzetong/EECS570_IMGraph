@@ -78,7 +78,7 @@ class vault_bank:
             print("//-------------------Accessing Writing Request Finial cycle-----------------------//")
             num_data = self.size // self.data_size
             for i in range(num_data):
-                self.memory_bank[self.addr//self.data_size + i] = self.data[i]
+                self.memory_bank[((self.addr-self.idx*2**29)//self.data_size + i)] = self.data[i]
             self.request_processing = False
             self.burst_delay = 0
             self.cmd = 0
@@ -124,7 +124,7 @@ class vault_bank:
             # print("How many Burst request needed:", self.burst_num)
             # calculating total delay
             print("//-------------------Calculating Reading Request Total Delay-------------------//")
-            print("self.first_request:",self.first_request)
+            # print("self.first_request:",self.first_request)
             # nx_size = self.size
             # for i in range(1, self.burst_num + 1):
                 # first requesting, Open row and hit
@@ -192,35 +192,63 @@ class vault_bank:
             print("//---------------Calculating Writing Request Total Delay-------------------//")
             # first requesting, Open row and hit
             if (self.first_request == True):
-                print("Calculating Total Delay: accessing self.first_request ==True statement")
-                self.current_row = self.nx_row
-                print("current row:", self.current_row)
-                self.nx_row = (self.addr + self.data_size) // self.mem_row_size
-                print("next row:", self.nx_row)
-                if (self.current_row == self.nx_row):
-                    self.burst_delay = self.burst_delay + 34 + 17
+                # if nx_size<128 can not calculate  self.nx_row = (addr + i*128) // self.mem_row_size
+                if (self.size < self.data_signal_width):
+                    self.current_row = self.nx_row
+                    print("current row:", self.current_row)
+                    self.nx_row = (self.addr + self.size) // self.mem_row_size
+                    print("next row:", self.nx_row)
+                    if (self.current_row == self.nx_row):
+                        self.burst_delay = self.burst_delay + 34 + 17
+                    else:
+                        # Within one burst request, but row changed
+                        self.burst_delay = self.burst_delay + 34 * 2 + 17 * 2
+                    self.first_request = False
+                    print("self.burst_delay:", self.burst_delay)
                 else:
-                    # Within one burst request, but row changed
-                    self.burst_delay = self.burst_delay + 34 * 2 + 17 * 2
-                self.first_request = False
+                    print("Calculating Total Delay: accessing self.first_request == Ture statement,size>=36")
+                    self.current_row = self.nx_row
+                    print("current row:", self.current_row)
+                    self.nx_row = (self.addr + self.data_signal_width) // self.mem_row_size
+                    print("next row:", self.nx_row)
+                    if (self.current_row == self.nx_row):
+                        self.burst_delay = self.burst_delay + 34 + 17
+                    else:
+                        # Within one burst request, but row changed
+                        self.burst_delay = self.burst_delay + 34 * 2 + 17 * 2
+                    self.first_request = False
+                    print("self.burst_delay:", self.burst_delay)
+                # self.burst_delay_deque.append(self.burst_delay)
             else:
                 print("Calculating Total Delay: accessing else statement")
                 # calculating which row is read or wrote, for every burst
-
-                self.current_row = self.nx_row
-                # reading from different row for start addr
-                if (self.addr // self.mem_row_size != self.current_row):
-                    self.burst_delay = self.burst_delay + 34
-
-                print("current row:", self.current_row)
-                self.nx_row = (self.addr + self.data_size) // self.mem_row_size
-                print("next row:", self.nx_row)
-                if (self.current_row == self.nx_row):
-                    self.burst_delay = self.burst_delay + 17
+                print("nx_size is :", self.size)
+                if (self.size < self.data_signal_width):
+                    self.current_row = self.nx_row
+                    if (self.addr // self.mem_row_size != self.current_row):
+                        self.burst_delay = self.burst_delay + 34
+                    self.nx_row = (self.addr + self.size) // self.mem_row_size
+                    if (self.current_row == self.nx_row):
+                        self.burst_delay = self.burst_delay + 17
+                    else:
+                        # Within one burst request, but row changed
+                        self.burst_delay = self.burst_delay + 34 + 17 * 2
+                    self.first_request = False
                 else:
-                    # Within one burst request, but row changed
-                    self.burst_delay = self.burst_delay + 34 + 17 * 2
-                self.first_request = False
+                    self.current_row = self.nx_row
+                    # reading from different row for starting addr
+                    if (self.addr // self.mem_row_size != self.current_row):
+                        self.burst_delay = self.burst_delay + 34
+
+                    print("current row:", self.current_row)
+                    self.nx_row = (self.addr + self.data_signal_width) // self.mem_row_size
+                    print("next row:", self.nx_row)
+                    if (self.current_row == self.nx_row):
+                        self.burst_delay = self.burst_delay + 17
+                    else:
+                        # Within one burst request, but row changed
+                        self.burst_delay = self.burst_delay + 34 + 17 * 2
+                    self.first_request = False
 
                 print("Burst_delay is :", self.burst_delay)
                 # print_deque()

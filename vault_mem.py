@@ -52,7 +52,7 @@ class VM:
         self.size = 0
         self.req_tag = 0
         self.req_bank_tag=0
-
+        self.data_size = 4
         # print("self.track_table:", self.track_table, type(self.track_table))
     #getting tag for req,range[1,999]
     def GetReqTag(self):
@@ -106,7 +106,7 @@ class VM:
                             bank_tag2 = self.GetBankTag()
                             size2 = self.data_signal_width - size1
                             Tags.append(bank_tag2)
-                            req2_bank = mem_request(req.cmd, start_addr, req.data, size1, bank_tag2)
+                            req2_bank = mem_request(req.cmd, new_start_addr, req.data, size2, bank_tag2)
                             self.vault_bank[bank_idx2].request_port.append(req2_bank)
                             next_size = next_size - self.data_signal_width
                     else:
@@ -139,56 +139,76 @@ class VM:
                 next_size = req.size
                 for i in range(1, num_burst + 1):
                     if (next_size > self.data_signal_width):
-                        req_addr_size = req_addr_size + self.data_signal_width
+
                         start_addr = req.addr + (i - 1) * self.data_signal_width
                         end_addr = start_addr + self.data_signal_width
                         if ((start_addr // self.vault_bank_size) == (end_addr // self.vault_bank_size)):
                             bank_idx = start_addr // self.vault_bank_size
-                            bank_tag = self.GetBankTag()
-                            req_bank = mem_request(req.cmd, start_addr, req.data, self.data_signal_width, bank_tag)
+                            data=req.data[(i-1)*self.data_signal_width//self.data_size
+                                          :(i-1)*(self.data_signal_width//self.data_size)+self.data_signal_width//self.data_size]
+                            print("(i-1)*self.data_signal_width//self.data_size",(i-1)*self.data_signal_width//self.data_size)
+                            print("(i-1)*(self.data_signal_width//self.data_size)+self.data_signal_width//self.data_size",
+                                  (i-1)*(self.data_signal_width//self.data_size)+self.data_signal_width//self.data_size)
+                            print("data",data)
+                            req_bank = mem_request(req.cmd, start_addr, data, self.data_signal_width, 0)
                             self.vault_bank[bank_idx].request_port.append(req_bank)
                             next_size = next_size - self.data_signal_width
-                            Tags.append(bank_tag)
                         else:
                             bank_idx1 = start_addr // self.vault_bank_size
-                            bank_tag1 = self.GetBankTag()
-                            Tags.append(bank_tag1)
                             size1 = self.vault_bank_size * (bank_idx1 + 1) - start_addr
-                            req1_bank = mem_request(req.cmd, start_addr, req.data, size1, bank_tag1)
+                            data1=req.data[(req_addr_size // 4):(req_addr_size // 4 + size1 // 4)]
+                            print("data1:",data1)
+                            req1_bank = mem_request(req.cmd, start_addr, data1, size1, 0)
                             self.vault_bank[bank_idx1].request_port.append(req1_bank)
 
                             bank_idx2 = end_addr // self.vault_bank_size
-                            new_start_addr = (bank_idx2) * self.vault_bank_size
-                            bank_tag2 = self.GetBankTag()
+                            # data_size2=(2**29*bank_idx2-end_addr)//self.data_size
                             size2 = self.data_signal_width - size1
-                            Tags.append(bank_tag2)
-                            req2_bank = mem_request(req.cmd, start_addr, req.data, size1, bank_tag2)
+                            data2 = req.data[(req_addr_size + size1) // 4:(((req_addr_size + size1) // 4) + size2 // 4)]
+                            print("(req_addr_size + size1) // 4:",(req_addr_size + size1) // 4,
+                                  "(((req_addr_size + size1) // 4) + size2 // 4)",(((req_addr_size + size1) // 4) + size2 // 4))
+                            print("data2:", data2)
+                            new_start_addr = (bank_idx2) * self.vault_bank_size
+
+                            req2_bank = mem_request(req.cmd, new_start_addr, data2, size2, 0)
                             self.vault_bank[bank_idx2].request_port.append(req2_bank)
                             next_size = next_size - self.data_signal_width
+                        req_addr_size = req_addr_size + self.data_signal_width
                     else:
                         start_addr = req.addr + req_addr_size  # + (i - 1) * (self.data_signal_width//4) +
                         # start_addr=self.start_addr
                         end_addr = start_addr + next_size
                         if ((start_addr // self.vault_bank_size) == (end_addr // self.vault_bank_size)):
                             bank_idx = start_addr // self.vault_bank_size
-                            bank_tag = self.GetBankTag()
-                            req_bank = mem_request(req.cmd, start_addr, req.data, next_size, bank_tag)
+                            data=req.data[(i-1)*self.data_signal_width//self.data_size
+                                          :(i-1)*(self.data_signal_width//self.data_size)+next_size//self.data_size]
+                            req_bank = mem_request(req.cmd, start_addr, data, next_size, 0)
                             self.vault_bank[bank_idx].request_port.append(req_bank)
-                            Tags.append(bank_tag)
+                            Tags.append(0)
                         else:
                             bank_idx1 = start_addr // self.vault_bank_size
-                            bank_tag1 = self.GetBankTag()
-                            Tags.append(bank_tag1)
                             size1 = self.vault_bank_size * (bank_idx1 + 1) - start_addr
-                            req1_bank = mem_request(req.cmd, start_addr, req.data, size1, bank_tag1)
+                            data1 = req.data[(req_addr_size // 4):(req_addr_size // 4 + size1 // 4)]
+                            print("size1:", size1)
+                            print("req.data:",req.data)
+                            print("req_addr_size:",req_addr_size)
+                            print("(req_addr_size // 4):",(req_addr_size // 4))
+                            print("(req_addr_size // 4 + size1 // 4)-1",(req_addr_size // 4 + size1 // 4)-1)
+                            print("data1:",data1)
+                            req1_bank = mem_request(req.cmd, start_addr, data1, size1, 0)
                             self.vault_bank[bank_idx1].request_port.append(req1_bank)
 
                             bank_idx2 = end_addr // self.vault_bank_size
                             new_start_addr = (bank_idx2) * self.vault_bank_size
-                            bank_tag2 = self.GetBankTag()
                             size2 = next_size - size1
-                            Tags.append(bank_tag2)
-                            req2_bank = mem_request(req.cmd, new_start_addr, req.data, size2, bank_tag2)
+                            data2 = req.data[(req_addr_size + size1) // 4:(((req_addr_size + size1) // 4) + size2 // 4)]
+                            print("size2:", size2)
+                            print("req.data[(req_addr_size + size1)//4:",(req_addr_size + size1)//4,
+                                        "(req_addr_size // 4 + size2 // 4):",(req_addr_size // 4 + size2 // 4))
+                            print("data2:", data2)
+
+                            req2_bank = mem_request(req.cmd, new_start_addr, data2, size2, 0)
+                            self.vault_bank[bank_idx2].request_port.append(req2_bank)
 
 
 
