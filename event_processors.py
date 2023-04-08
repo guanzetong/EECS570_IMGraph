@@ -91,9 +91,6 @@ class EP_h1:
         vault_capacity = (self.ep_idx_ranges[1]-self.ep_idx_ranges[0]) // 32 + 1
         vault_index = (Vid-self.ep_idx_ranges[0])// vault_capacity
         return int(vault_index)
-    ## deque().append(vid)
-    ## reduce,propagate from deque (32)
-    ## foreach
 
     def vertex_property_addr(self, Vid):
         return Vid * 4
@@ -106,6 +103,15 @@ class EP_h1:
         return int(St1 * 4 + 20000)
 
     def allocate_event_vault_buffer(self, vault_idx):
+      '''
+      read event from buffer, do:
+      1) get Vid and delta
+      2) make read request for Vp
+      3) make read request for St
+
+      return:
+        Vid, delta, vp_tag, st_tag
+      '''
       if len(self.buffer[vault_idx]) == 0:
            return None
       else: #get an event from ep_i deque
@@ -171,8 +177,8 @@ class EP_h1:
 
     def Update_VP(self, Vid, Vp_new):
         '''
-        read mem.repsone() to get vertex property, use reduce function to update
-        delta = allocate_event_vault_port()[1]
+        write Vp_new to vault_mem
+        return None
         '''
         
         #Vp_old = self.read_VP(Vid)
@@ -195,7 +201,7 @@ class EP_h1:
     def get_edge_num(self, Vid, st_tag):
         '''
         read response port to get start address and create a request to read neighbor
-        return the number of edge of this vertex and neighbor tag and st_ready
+        return number of neighbors, st_ready, neighbor_tag
         '''
         vault_num = self.alloc_vault(Vid)
         if len(self.vault_mem[vault_num].response_port) == 0:
@@ -220,45 +226,11 @@ class EP_h1:
                     return n, st_ready, neighbor_tag
             print("No matched st_tag, St is not ready")
             return None, None, None
-            #     st1_ready = False
-            #     both_ready = False
-            #     response = self.vault_mem[vault_num].response_port[i]
-            #     if response.tag == st_tag:
-            #         if not st1_ready:
-            #             St1 = response.data
-            #             st1_ready = True
-            #             print(f"St1 is returned, St1={St1}, response_st_tag={response.tag}, req_st_tag={st_tag}")
-            #         else:
-            #             St2 = response.data
-            #             st1_ready = False
-            #             both_ready = True
-            #             print(f"St2 is returned, St2={St2}, response_vp_tag={response.tag}, req_vp_tag={st_tag}")
-            #         if st1_ready:
-            #             self.vault_mem[vault_num].response_port.remove(i)
-            #             self.vault_mem[vault_num].response_port.remove(i+1)
-            # if both_ready:
-            #     n = St2 - St1
-            #     print(f'number of neighbor of Vid={Vid} is {n}')
-            #     neighbor_addr = self.vertex_neighbor_addr(Vid)
-            #     neighbor_tag = self.vault_mem[vault_num].GetReqTag()
-            #     req_neighbor = mem_request("read", neighbor_addr, n, neighbor_tag)
-            #     return n, neighbor_tag, both_ready
-            # else:
-            #     print(" start is not ready")
-            #     return None, None, False
-            # print("No matched vp_tag, Vp is not ready")
-            # return None
-            # St_1 = self.vault_mem[vault_num].response_port.popleft().data
-            # St_2 = self.vault_mem[vault_num].response_port.popleft().data
-            # n = St_2 - St_1    # byte sized
-            # print("neighbor num: ",n)
-            # neighbor_addr = self.vertex_neighbor_addr(Vid)
-            # req_neighbor = mem_request("read", neighbor_addr, n)
-            # self.vault_mem[vault_num].request_port.append(req_neighbor)
-            # return n
+
 
     def Propagate(self, delta, N_src, func='pagerank', beta=0.85):
         '''
+        just algorithm
         delta = reduce(read_vp(), allocate_event_vault_port()[1])
         N_src = get_edge_num(Vid)
         '''
@@ -279,6 +251,11 @@ class EP_h1:
 # pagerank: delta(from eq) < threshold, not do propagate
 ####
     def Propagate_condion(self,Vp_new, Vp, threshold):
+        '''
+        decide whether to do propagate
+        return:
+            boolean
+        '''
         if Vp_new is None or Vp is None:
             return False
         elif abs(Vp_new-Vp) <= threshold:
@@ -288,6 +265,11 @@ class EP_h1:
             return True
         
     def read_neighbor(self, vault_num, neighbor_tag):
+        '''
+        read neighbor vertex id, if success set self.neighbor_ready[vault_num] to true
+        return:
+            neighbor_deque----deque that store all neighbor vid
+        '''
         if self.st_ready[vault_num] and len(self.vault_mem[vault_num].response_port)!=0 :
             if not self.vp_ready[vault_num]:
                 print("Bug: Vp is later than neighbor")
@@ -315,12 +297,11 @@ class EP_h1:
         '''
         use propagate function to create new event
         input:
-        beta: dumping factor
-        N_src: number of neighbors of VI, N_src = get_edge_num(self, Vid)
-        VI_neighor: list of VI's neighbor
-        delta: delta of VI from EQ
+        each cycle read a vid from neighbor_deque and do propagate
         Return:
-        New_event: list of event: new events sent to EQ
+            count: which neighbor is being processed
+            busy: flag indicate not taking event in
+            N_src: neighbor number
         '''
         #read vault_mem[x].respond_port.popleft()//64 bit neighbour vertex_id
         #propogate function => new_delta
@@ -357,13 +338,11 @@ class EP_h1:
 
     def forward_message(self, Vid,全局vid分配):
         pass
-        # destnation_ep.append.()
-        # return destination or into_buffer
-        # pass
 
     def buffer_event(self, buffer_idx, incoming_events):
         '''
-        buffer events that aren't able to feed in EP
+        allocate all incoming_events into each buffer based on Vid
+        return None
         '''
         for i in range(len(incoming_events)):
             if self.alloc_vault(incoming_events[i].idx) == buffer_idx:
@@ -374,12 +353,12 @@ class EP_h1:
         incoming_events = []
         for j in range(len(self.eq_i)):
             incoming_events.append(self.eq_i.popleft())
-        print(f"incoming events number: {len(incoming_events)}")
+        print(f"incoming events number: {len(incoming_events)}") # check the number of events feed into ep this cycle
         for i in range(num_vaults):
             # read events into buffer
             self.buffer_event(i, incoming_events)
             print(f'buffer_{i} number:{len(self.buffer[i])}')
-            if not self.busy[i]:
+            if not self.busy[i]: # when not busy, try to take a new event if any
                 print('not busy, try to get a new event')
                 # read new events
                 if (len(self.buffer[i]) != 0):
@@ -388,11 +367,10 @@ class EP_h1:
                     self.Vp[i] = None
                     self.Vp_new[i] = None
                     self.n[i] = None
-                    print(f"vault[{i}] is reading event from buffer{i}")
+                    print(f"vault[{i}] is reading event from buffer{i}")  # check working buffer
                 else:
                     pass
-            # busy: reading Vp,St or propagating
-            else:# when busy not accept new event
+            else:# when busy not accept new event, reading Vp,St or propagating
                 print('busy, try to read needed data')
                 if not self.vp_ready[i] and self.vp_tag[i] !=None:
                     self.Vp[i], self.vp_ready[i] = self.read_VP(i, self.vp_tag[i], self.vp_ready[i])
