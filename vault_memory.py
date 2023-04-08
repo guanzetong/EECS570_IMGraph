@@ -10,6 +10,8 @@ class VM:
         
         self.request_port = request_port
         self.response_port = response_port
+    def GetReqTag(self):
+        pass
         
     def one_cycle():
         pass

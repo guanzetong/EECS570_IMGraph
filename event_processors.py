@@ -103,25 +103,6 @@ class EP_h1:
         vault_num = self.alloc_vault(Vid)
         return int(Vid + 20000)
 
-    def allocate_event_vault_port(self):
-      if len(self.eq_i) == 0:
-           return None
-      else: #get an event from ep_i deque
-        a = self.eq_i.popleft()
-        #   delta     = self.eq_i.popleft().val  #vault num is a result of the previous function
-        vertex_id = a.idx
-        delta = a.val
-        vault_num = self.alloc_vault(Vid=vertex_id)
-        # read vertex property request
-        vp_addr = self.vertex_property_addr(Vid=vertex_id)
-        req_vp = mem_request("read", vp_addr, 1)
-        self.vault_mem[vault_num].request_port.append(req_vp)
-        # read vertex start address request
-        v_st_addr = self.vertex_st_addr(Vid=vertex_id)
-        req_v_st = mem_request("read", v_st_addr, 2)
-        self.vault_mem[vault_num].request_port.append(req_v_st)
-        return vertex_id, delta
-    
     def allocate_event_vault_buffer(self, vault_idx):
       if len(self.buffer[vault_idx]) == 0:
            return None

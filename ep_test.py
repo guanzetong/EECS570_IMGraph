@@ -19,10 +19,11 @@ buffer = []
 count = []
         
 
-ep1=EP_h1(eq_i, eq_o, ep_0_i, ep_0_o, ep_1_i, ep_1_o, ep_idx_ranges, num_vaults,"sssp")
 
 for i in range (60):
-    eq_i.appned(event(i,i))
+    eq_i.append(event(i,i))
+ep1=EP_h1(eq_i, eq_o, ep_0_i, ep_0_o, ep_1_i, ep_1_o, ep_idx_ranges, num_vaults,"sssp")
+
 print("Cycle")
 ep1.one_cycle(num_vaults)
 
