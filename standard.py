@@ -17,5 +17,6 @@ class mem_request:
         
 class mem_response:
     
-    def __init__(self, data):
-        self.data = data
+    def __init__(self, data, tag):
+        self.data = data #list
+        self.tag = tag
