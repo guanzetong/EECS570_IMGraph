@@ -70,7 +70,7 @@ class EP_h1:
         elif func.lower() == 'sssp' or func.lower() == 'bfs':
             for i in range(32):
                 for j in range(vp_num):
-                    req = mem_request("write", vp_addr+j, float('inf'))
+                    req = mem_request("write", vp_addr+j, float('inf'),0)
                     self.vault_mem[i].request_port.append(req)
 
     def alloc_vault(self, Vid):
@@ -127,13 +127,13 @@ class EP_h1:
         vault_num = self.alloc_vault(Vid=vertex_id)
         # read vertex property request
         vp_addr = self.vertex_property_addr(Vid=vertex_id)
-        vp_tag = self.vault[vault_num].Gettag()
+        vp_tag = self.vault[vault_num].GetReqTag()
         req_vp = mem_request("read", vp_addr, 1, vp_tag)
         print(f"reading vp: vp_addr={vp_addr}")
         self.vault_mem[vault_num].request_port.append(req_vp)
         # read vertex start address request
         v_st_addr = self.vertex_st_addr(Vid=vertex_id)
-        st_tag = self.vault[vault_num].Gettag()
+        st_tag = self.vault[vault_num].GetReqTag()
         req_v_st = mem_request("read", v_st_addr, 2, st_tag)
         print(f"reading start addr: st_addr={v_st_addr}")
         self.vault_mem[vault_num].request_port.append(req_v_st)
@@ -191,7 +191,7 @@ class EP_h1:
         if Vp_new != None:
             Vp_addr = self.vertex_property_addr(Vid)
             vault_num = self.alloc_vault(Vid)
-            tag_w_vp = self.vault_mem[vault_num].Gettag()
+            tag_w_vp = self.vault_mem[vault_num].GetReqTag()
             req_w_Vp = mem_request("write", Vp_addr, Vp_new,tag_w_vp)
             print(f"writing Vp_new, Vp_new = {Vp_new}")
             self.vault_mem[vault_num].request_port.append(req_w_Vp)
@@ -232,7 +232,7 @@ class EP_h1:
                 n = St2 - St1
                 print(f'number of neighbor of Vid={Vid} is {n}')
                 neighbor_addr = self.vertex_neighbor_addr(Vid)
-                neighbor_tag = self.vault_mem[vault_num].Gettag()
+                neighbor_tag = self.vault_mem[vault_num].GetReqTag()
                 req_neighbor = mem_request("read", neighbor_addr, n, neighbor_tag)
                 return n, neighbor_tag, both_ready
             else:
