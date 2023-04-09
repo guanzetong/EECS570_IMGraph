@@ -1,0 +1,606 @@
+incoming events number: 1
+buffer_0 number:1
+not busy, try to get a new event
+reading vp: vp_addr=0
+reading start addr: st_addr=20
+vault[0] is reading event from buffer0
+buffer_1 number:0
+not busy, try to get a new event
+buffer_2 number:0
+not busy, try to get a new event
+buffer_3 number:0
+not busy, try to get a new event
+buffer_4 number:0
+not busy, try to get a new event
+buffer_5 number:0
+not busy, try to get a new event
+buffer_6 number:0
+not busy, try to get a new event
+buffer_7 number:0
+not busy, try to get a new event
+buffer_8 number:0
+not busy, try to get a new event
+buffer_9 number:0
+not busy, try to get a new event
+buffer_10 number:0
+not busy, try to get a new event
+buffer_11 number:0
+not busy, try to get a new event
+buffer_12 number:0
+not busy, try to get a new event
+buffer_13 number:0
+not busy, try to get a new event
+buffer_14 number:0
+not busy, try to get a new event
+buffer_15 number:0
+not busy, try to get a new event
+buffer_16 number:0
+not busy, try to get a new event
+buffer_17 number:0
+not busy, try to get a new event
+buffer_18 number:0
+not busy, try to get a new event
+buffer_19 number:0
+not busy, try to get a new event
+buffer_20 number:0
+not busy, try to get a new event
+buffer_21 number:0
+not busy, try to get a new event
+buffer_22 number:0
+not busy, try to get a new event
+buffer_23 number:0
+not busy, try to get a new event
+buffer_24 number:0
+not busy, try to get a new event
+buffer_25 number:0
+not busy, try to get a new event
+buffer_26 number:0
+not busy, try to get a new event
+buffer_27 number:0
+not busy, try to get a new event
+buffer_28 number:0
+not busy, try to get a new event
+buffer_29 number:0
+not busy, try to get a new event
+buffer_30 number:0
+not busy, try to get a new event
+buffer_31 number:0
+not busy, try to get a new event
+1
+2
+incoming events number: 0
+check req = <standard.mem_request object at 0x102226dd0>
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+incoming events number: 0
+check req = <standard.mem_request object at 0x102226e00>
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle13
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle14
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle15
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle16
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle17
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle18
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle19
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle20
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle21
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle22
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle23
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle24
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle25
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle26
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle27
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle28
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle29
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle30
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle31
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle32
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle33
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle34
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle35
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle36
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle37
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle38
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle39
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle40
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle41
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle42
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle43
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle44
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle45
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle46
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle47
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle48
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle49
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle50
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle51
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Tag isn't ready
+start addr is not ready
+fetching data
+
+ cycle52
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Vp is returned, Vp=[4294967295], response_vp_tag=1, req_vp_tag=1
+start addr is not ready
+fetching data
+
+ cycle53
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+Vp_new (after reduce):  0.0
+writing Vp_new, Vp_new = 0.0
+start addr is not ready
+fetching data
+
+ cycle54
+incoming events number: 0
+check req = <standard.mem_request object at 0x102233fa0>
+buffer_0 number:0
+busy, try to read needed data
+start addr is not ready
+fetching data
+
+ cycle55
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+start addr is not ready
+fetching data
+
+ cycle56
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+start addr is not ready
+fetching data
+
+ cycle57
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+start addr is not ready
+fetching data
+
+ cycle58
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+start addr is not ready
+fetching data
+
+ cycle59
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+start addr is not ready
+fetching data
+
+ cycle60
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+start addr is not ready
+fetching data
+
+ cycle61
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+start addr is not ready
+fetching data
+
+ cycle62
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+start addr is not ready
+fetching data
+
+ cycle63
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+start addr is not ready
+fetching data
+
+ cycle64
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+start addr is not ready
+fetching data
+
+ cycle65
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+start addr is not ready
+fetching data
+
+ cycle66
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+start addr is not ready
+fetching data
+
+ cycle67
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+start addr is not ready
+fetching data
+
+ cycle68
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+start addr is not ready
+fetching data
+
+ cycle69
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+start addr is not ready
+fetching data
+
+ cycle70
+incoming events number: 0
+buffer_0 number:0
+busy, try to read needed data
+St1, St2 is returned, St1=11, St2=13 response_st_tag=2, req_st_tag=2
+
+neigbor number is 4294967294, neighbor_tag is 3, sending req_neighbor 
+
+ cycle71
+incoming events number: 0
+check req = <standard.mem_request object at 0x102233fa0>
+index2=1
+index2=2
+index2=3
+index2=4
+index2=5
+index2=6
+index2=7
+index2=8

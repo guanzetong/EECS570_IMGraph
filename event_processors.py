@@ -1,7 +1,7 @@
 import numpy as np
 import copy
 from collections import deque
-from vault_memory import VM
+from vault_mem import VM
 from standard import mem_request, mem_response, event
 
 class EP_h1:
@@ -40,6 +40,7 @@ class EP_h1:
         self.st_tag = []
         self.neighbor_tag = []
         self.neighbor_deque = []
+        self.vp_new_written = []
         for i in range(num_vaults):
             self.busy.append(False)
             self.buffer.append(deque())
@@ -56,30 +57,41 @@ class EP_h1:
             self.st_tag.append(None)
             self.neighbor_tag.append(None)
             self.neighbor_deque.append(deque())
+            self.vp_new_written.append(False)
 
         
         # Instantiate vault memories
         self.vault_mem = []
+        memory_bank_part = []
+        if func.lower() == 'pagerank':
+            memory_bank = np.zeros(2**21 // 4, dtype=np.uint32)
+        elif func.lower() == 'sssp' or func.lower() == 'bfs':
+            # for i in range(100):
+            #     memory_bank_part.append(np.float32(np.inf))
+            memory_part = [np.float32(np.inf), np.float32(np.inf), np.float32(np.inf), np.float32(np.inf), np.float32(np.inf), 0+11, 2+11, 3+11, 5+11, 6+11, 7+11, 1,2,3,1,3,4,2 ]
+            memory_part2 = list(np.zeros(2**21 // 4 - 100 -18, dtype=np.uint32))
+            memory_bank = memory_part + memory_part2
         for i in range(num_vaults):
             request_port = deque()
             response_port = deque()
-            vault_mem = VM(request_port, response_port)
+            vault_mem = VM(request_port, response_port, memory_bank)
             self.vault_mem.append(vault_mem)
 
         # Initialize vp of each vault based on algorithm
         vp_num = (self.ep_idx_ranges[1]-self.ep_idx_ranges[0]) // 32 + 1
         vp_addr = 0
-        if func.lower() == "pagerank":
-            for i in range(32):
-                for j in range(vp_num):
-                    req = mem_request("write", vp_addr+j*4, 0) # vp 32 bits = 4 bytes
-                    self.vault_mem[i].request_port.append(req)
+        # if func.lower() == "pagerank":
+        #     for i in range(32):
+        #         for j in range(vp_num):
+        #             req = mem_request("write", vp_addr+j*4, 0) # vp 32 bits = 4 bytes
+        #             self.vault_mem[i].request_port.append(req)
 
-        elif func.lower() == 'sssp' or func.lower() == 'bfs':
-            for i in range(32):
-                for j in range(vp_num):
-                    req = mem_request("write", vp_addr+j*4, float('inf'),0)
-                    self.vault_mem[i].request_port.append(req)
+        # elif func.lower() == 'sssp' or func.lower() == 'bfs':
+        #     for i in range(32):
+        #         for j in range(vp_num):
+        #             req = mem_request("write", vp_addr+j*4, float('inf'),0)
+        #             self.vault_mem[i].request_port.append(req)
+
 
     def alloc_vault(self, Vid):
         '''
@@ -96,11 +108,11 @@ class EP_h1:
         return int(Vid * 4)
 
     def vertex_st_addr(self, Vid):
-        return int(Vid*4 + 10000)
+        return int(Vid*4 + 20)  # 0 2 3 5 6 7
 
     def vertex_neighbor_addr(self, St1):
         #vault_num = self.alloc_vault(Vid)
-        return int(St1 * 4 + 20000)
+        return int(St1 * 4 + 44)
 
     def allocate_event_vault_buffer(self, vault_idx):
       '''
@@ -166,11 +178,11 @@ class EP_h1:
             length = len(self.vault_mem[vault_num].response_port)
             for i in range(length):
                 response = self.vault_mem[vault_num].response_port[i]
-                if response.tag == vp_tag:
+                if response.req_tag == vp_tag:
                     Vp = response.data
                     vp_ready = True
                     self.vault_mem[vault_num].response_port.remove(self.vault_mem[vault_num].response_port[i])
-                    print(f"Vp is returned, Vp={Vp}, response_vp_tag={response.tag}, req_vp_tag={vp_tag}")
+                    print(f"Vp is returned, Vp={Vp}, response_vp_tag={response.req_tag}, req_vp_tag={vp_tag}")
                     return Vp, vp_ready
             print("No matched vp_tag, Vp is not ready")
             return None, None
@@ -190,9 +202,10 @@ class EP_h1:
             Vp_addr = self.vertex_property_addr(Vid)
             vault_num = self.alloc_vault(Vid)
             #tag_w_vp = self.vault_mem[vault_num].GetReqTag()
-            req_w_Vp = mem_request("write", Vp_addr, Vp_new,0)
+            req_w_Vp = mem_request("write", Vp_addr, [Vp_new], 4, 0)
             print(f"writing Vp_new, Vp_new = {Vp_new}")
             self.vault_mem[vault_num].request_port.append(req_w_Vp)
+            self.vp_new_written[vault_num] = True
         else:
             print('Vp_new is not ready')
         return None
@@ -211,15 +224,15 @@ class EP_h1:
             length = len(self.vault_mem[vault_num].response_port)
             for i in range(length):
                 response = self.vault_mem[vault_num].response_port[i]
-                if response.tag == st_tag:
+                if response.req_tag == st_tag:
                     St1 = response.data[0]
                     St2 = response.data[1]
                     n = abs(St1 - St2)
                     st_ready = True
                     self.vault_mem[vault_num].response_port.remove(self.vault_mem[vault_num].response_port[i])
-                    print(f"St1, St2 is returned, St1={St1}, St2={St2} response_st_tag={response.tag}, req_st_tag={st_tag}\n")
+                    print(f"St1, St2 is returned, St1={St1}, St2={St2} response_st_tag={response.req_tag}, req_st_tag={st_tag}\n")
                     neighbor_tag = self.vault_mem[vault_num].GetReqTag()
-                    neighbor_addr = self.vertex_neighbor_addr(St1)
+                    neighbor_addr = St1
                     req_neighbor = mem_request("read", neighbor_addr, None, n*4, neighbor_tag)
                     self.vault_mem[vault_num].request_port.append(req_neighbor)
                     print(f"neigbor number is {n}, neighbor_tag is {neighbor_tag}, sending req_neighbor ")
@@ -278,7 +291,7 @@ class EP_h1:
                 neighbor_deque = deque()
                 for i in range(length):
                     response = self.vault_mem[vault_num].response_port[i]
-                    if response.tag == neighbor_tag:
+                    if response.req_tag == neighbor_tag:
                         neighbors = self.vault_mem[vault_num].response_port[i].data
                         self.vault_mem[vault_num].response_port.remove(self.vault_mem[vault_num].response_port[i])
                         for item in neighbors:
@@ -315,7 +328,7 @@ class EP_h1:
                 new_Vid = neighbor_deque.popleft()
                 print('new_Vid after propagate:', new_Vid)
                 print('new_delta after propagate:', new_delta)
-                self.eq_o.append(event(np.uint64(new_Vid),np.uint64(new_delta)))
+                self.eq_o.append(event(np.uint32(new_Vid),np.uint32(new_delta)))
                 count +=1
                 print('count: ',count)
             elif count == N_src-1:  #last propagate
@@ -324,7 +337,7 @@ class EP_h1:
                 print('new_Vid after propagate:', new_Vid)
                 new_delta = self.Propagate(delta, N_src, func, beta) # function of alg
                 print('new_delta after propagate:', new_delta)
-                self.eq_o.append(event(np.uint64(new_Vid),np.uint64(new_delta)))
+                self.eq_o.append(event(np.uint32(new_Vid),np.uint32(new_delta)))
                 print("finish last propagate")
                 self.vp_ready[vault_num] = False
                 self.st_ready[vault_num] = False
@@ -356,6 +369,7 @@ class EP_h1:
         print(f"incoming events number: {len(incoming_events)}") # check the number of events feed into ep this cycle
         for i in range(num_vaults):
             # read events into buffer
+            self.vault_mem[i].one_cycle()
             self.buffer_event(i, incoming_events)
             print(f'buffer_{i} number:{len(self.buffer[i])}')
             if not self.busy[i]: # when not busy, try to take a new event if any
@@ -374,7 +388,7 @@ class EP_h1:
                 print('busy, try to read needed data')
                 if not self.vp_ready[i] and self.vp_tag[i] !=None:
                     self.Vp[i], self.vp_ready[i] = self.read_VP(i, self.vp_tag[i], self.vp_ready[i])
-                else:
+                elif not self.vp_new_written[i]:
                     Vp_new = self.reduce(self.Vp[i], self.delta[i],self.func)
                     self.Update_VP(self.Vid[i], Vp_new)
                 if not self.st_ready[i] and self.st_tag[i] != None:

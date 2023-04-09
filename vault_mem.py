@@ -16,7 +16,7 @@ class VM:
         self.vault_bank_req_port = [deque() for _ in range(8)]
         # print("self.vault_bank_req_port:", self.vault_bank_req_port, type(self.vault_bank_req_port))
         self.vault_bank_resp_port = [deque() for _ in range(8)]
-        self.vault_bank_size = 2**32 // 8
+        self.vault_bank_size = 2**21 // 8
         self.vault_bank_mem = [vault_memory[i * self.vault_bank_size//4: (i + 1) * self.vault_bank_size//4] for i in range(8)]
         self.vault_bank = [None] * 8
         for i in range(8):
@@ -75,6 +75,7 @@ class VM:
         #output from each vault_bank mem_ctrl
         if self.request_port:
             req = self.request_port.popleft()
+            print(f'check req = {req}')
             req_addr_size=0
             Tags = []
             num_burst = math.ceil(req.size / self.data_signal_width)
@@ -107,6 +108,7 @@ class VM:
                             size2 = self.data_signal_width - size1
                             Tags.append(bank_tag2)
                             req2_bank = mem_request(req.cmd, new_start_addr, req.data, size2, bank_tag2)
+                            print(f'index2={bank_idx2}')
                             self.vault_bank[bank_idx2].request_port.append(req2_bank)
                             next_size = next_size - self.data_signal_width
                     else:
@@ -146,10 +148,10 @@ class VM:
                             bank_idx = start_addr // self.vault_bank_size
                             data=req.data[(i-1)*self.data_signal_width//self.data_size
                                           :(i-1)*(self.data_signal_width//self.data_size)+self.data_signal_width//self.data_size]
-                            print("(i-1)*self.data_signal_width//self.data_size",(i-1)*self.data_signal_width//self.data_size)
-                            print("(i-1)*(self.data_signal_width//self.data_size)+self.data_signal_width//self.data_size",
-                                  (i-1)*(self.data_signal_width//self.data_size)+self.data_signal_width//self.data_size)
-                            print("data",data)
+                            # print("(i-1)*self.data_signal_width//self.data_size",(i-1)*self.data_signal_width//self.data_size)
+                            # print("(i-1)*(self.data_signal_width//self.data_size)+self.data_signal_width//self.data_size",
+                            #       (i-1)*(self.data_signal_width//self.data_size)+self.data_signal_width//self.data_size)
+                            # print("data",data)
                             req_bank = mem_request(req.cmd, start_addr, data, self.data_signal_width, 0)
                             self.vault_bank[bank_idx].request_port.append(req_bank)
                             next_size = next_size - self.data_signal_width
@@ -157,7 +159,7 @@ class VM:
                             bank_idx1 = start_addr // self.vault_bank_size
                             size1 = self.vault_bank_size * (bank_idx1 + 1) - start_addr
                             data1=req.data[(req_addr_size // 4):(req_addr_size // 4 + size1 // 4)]
-                            print("data1:",data1)
+                            #print("data1:",data1)
                             req1_bank = mem_request(req.cmd, start_addr, data1, size1, 0)
                             self.vault_bank[bank_idx1].request_port.append(req1_bank)
 
@@ -165,9 +167,9 @@ class VM:
                             # data_size2=(2**29*bank_idx2-end_addr)//self.data_size
                             size2 = self.data_signal_width - size1
                             data2 = req.data[(req_addr_size + size1) // 4:(((req_addr_size + size1) // 4) + size2 // 4)]
-                            print("(req_addr_size + size1) // 4:",(req_addr_size + size1) // 4,
-                                  "(((req_addr_size + size1) // 4) + size2 // 4)",(((req_addr_size + size1) // 4) + size2 // 4))
-                            print("data2:", data2)
+                            #print("(req_addr_size + size1) // 4:",(req_addr_size + size1) // 4,
+                                #   "(((req_addr_size + size1) // 4) + size2 // 4)",(((req_addr_size + size1) // 4) + size2 // 4))
+                            #print("data2:", data2)
                             new_start_addr = (bank_idx2) * self.vault_bank_size
 
                             req2_bank = mem_request(req.cmd, new_start_addr, data2, size2, 0)
@@ -189,12 +191,12 @@ class VM:
                             bank_idx1 = start_addr // self.vault_bank_size
                             size1 = self.vault_bank_size * (bank_idx1 + 1) - start_addr
                             data1 = req.data[(req_addr_size // 4):(req_addr_size // 4 + size1 // 4)]
-                            print("size1:", size1)
-                            print("req.data:",req.data)
-                            print("req_addr_size:",req_addr_size)
-                            print("(req_addr_size // 4):",(req_addr_size // 4))
-                            print("(req_addr_size // 4 + size1 // 4)-1",(req_addr_size // 4 + size1 // 4)-1)
-                            print("data1:",data1)
+                            #print("size1:", size1)
+                            #print("req.data:",req.data)
+                            #print("req_addr_size:",req_addr_size)
+                            #print("(req_addr_size // 4):",(req_addr_size // 4))
+                            #print("(req_addr_size // 4 + size1 // 4)-1",(req_addr_size // 4 + size1 // 4)-1)
+                            #print("data1:",data1)
                             req1_bank = mem_request(req.cmd, start_addr, data1, size1, 0)
                             self.vault_bank[bank_idx1].request_port.append(req1_bank)
 
@@ -202,10 +204,10 @@ class VM:
                             new_start_addr = (bank_idx2) * self.vault_bank_size
                             size2 = next_size - size1
                             data2 = req.data[(req_addr_size + size1) // 4:(((req_addr_size + size1) // 4) + size2 // 4)]
-                            print("size2:", size2)
-                            print("req.data[(req_addr_size + size1)//4:",(req_addr_size + size1)//4,
-                                        "(req_addr_size // 4 + size2 // 4):",(req_addr_size // 4 + size2 // 4))
-                            print("data2:", data2)
+                            #print("size2:", size2)
+                            #print("req.data[(req_addr_size + size1)//4:",(req_addr_size + size1)//4,
+                                        # "(req_addr_size // 4 + size2 // 4):",(req_addr_size // 4 + size2 // 4))
+                            #print("data2:", data2)
 
                             req2_bank = mem_request(req.cmd, new_start_addr, data2, size2, 0)
                             self.vault_bank[bank_idx2].request_port.append(req2_bank)
@@ -215,13 +217,14 @@ class VM:
 
 
         for i in range(8):  # iterate over each vault_bank object
-            print(f"Request Port in vault_bank i is:", i)
-            for req in self.vault_bank[i].request_port:  # iterate over each request in the request port
-                print("req.cmd:",req.cmd,"req.addr:",req.addr,"req.data:",req.data,"req.size:",req.size,"req.tag:",req.req_tag)
+            #print(f"Request Port in vault_bank i is:", i)
+            for req in self.vault_bank[i].request_port: 
+                pass # iterate over each request in the request port
+                #print("req.cmd:",req.cmd,"req.addr:",req.addr,"req.data:",req.data,"req.size:",req.size,"req.tag:",req.req_tag)
         for i in range(8):
-            print("accessing vault_bank idx is:",i)
+            #print("accessing vault_bank idx is:",i)
             self.vault_bank[i].one_cycle()
-        print("return from each bank, accessing response")
+        #print("return from each bank, accessing response")
         #response
         for i in range(8):
             # self.vault_bank[i].one_cycle()
@@ -230,8 +233,8 @@ class VM:
                 self.track_table.update_entry(resp.tag,resp.data)
         #if ready bit it set, send data to response port
         self.track_table.transfer_to_resp_port(self.response_port)
-        print(self.track_table)
-        print("finish this cycle")
+        #print(self.track_table)
+        #print("finish this cycle")
 
 
 
