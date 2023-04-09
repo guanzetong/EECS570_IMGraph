@@ -93,7 +93,7 @@ class EP_h1:
         return int(vault_index)
 
     def vertex_property_addr(self, Vid):
-        return Vid * 4
+        return int(Vid * 4)
 
     def vertex_st_addr(self, Vid):
         return int(Vid*4 + 10000)
@@ -123,13 +123,13 @@ class EP_h1:
         # read vertex property request
         vp_addr = self.vertex_property_addr(Vid=vertex_id)
         vp_tag = self.vault_mem[vault_num].GetReqTag()
-        req_vp = mem_request("read", vp_addr, 4, vp_tag)
+        req_vp = mem_request("read", vp_addr, None, 4, vp_tag)
         print(f"reading vp: vp_addr={vp_addr}")
         self.vault_mem[vault_num].request_port.append(req_vp)
         # read vertex start address request
         v_st_addr = self.vertex_st_addr(Vid=vertex_id)
         st_tag = self.vault_mem[vault_num].GetReqTag()
-        req_v_st = mem_request("read", v_st_addr, 8, st_tag)
+        req_v_st = mem_request("read", v_st_addr, None, 8, st_tag)
         print(f"reading start addr: st_addr={v_st_addr}")
         self.vault_mem[vault_num].request_port.append(req_v_st)
         return vertex_id, delta, vp_tag, st_tag
@@ -220,7 +220,7 @@ class EP_h1:
                     print(f"St1, St2 is returned, St1={St1}, St2={St2} response_st_tag={response.tag}, req_st_tag={st_tag}\n")
                     neighbor_tag = self.vault_mem[vault_num].GetReqTag()
                     neighbor_addr = self.vertex_neighbor_addr(St1)
-                    req_neighbor = mem_request("read", neighbor_addr, n*4, neighbor_tag)
+                    req_neighbor = mem_request("read", neighbor_addr, None, n*4, neighbor_tag)
                     self.vault_mem[vault_num].request_port.append(req_neighbor)
                     print(f"neigbor number is {n}, neighbor_tag is {neighbor_tag}, sending req_neighbor ")
                     return n, st_ready, neighbor_tag
