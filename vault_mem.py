@@ -75,19 +75,22 @@ class VM:
         #output from each vault_bank mem_ctrl
         if self.request_port:
             req = self.request_port.popleft()
-            print(f'check req = {req}')
+            print(f'check reqqqqq = {req.addr}, req.size={req.size}')
             req_addr_size=0
             Tags = []
             num_burst = math.ceil(req.size / self.data_signal_width)
+            print("req.size:",req.size,"req.addr:",req.addr)
             if req.cmd == "read":
                 # print("self.track_table:", self.track_table, type(self.track_table))
                 next_size = req.size
+                print("req.size:",req.size,"req.addr:",req.addr)
                 for i in range(1, num_burst + 1):
                     if (next_size > self.data_signal_width):
                         req_addr_size=req_addr_size+self.data_signal_width
                         start_addr = req.addr + (i - 1) * self.data_signal_width
                         end_addr = start_addr + self.data_signal_width
                         if ((start_addr // self.vault_bank_size) == (end_addr // self.vault_bank_size)):
+                            print("accessing (start_addr // self.vault_bank_size) == (end_addr // self.vault_bank_size) statement")
                             bank_idx = start_addr // self.vault_bank_size
                             bank_tag = self.GetBankTag()
                             req_bank=mem_request(req.cmd, start_addr, req.data,self.data_signal_width, bank_tag)
@@ -95,6 +98,7 @@ class VM:
                             next_size = next_size - self.data_signal_width
                             Tags.append(bank_tag)
                         else:
+                            print("accessing two bank ")
                             bank_idx1 = start_addr // self.vault_bank_size
                             bank_tag1 = self.GetBankTag()
                             Tags.append(bank_tag1)
@@ -113,15 +117,18 @@ class VM:
                             next_size = next_size - self.data_signal_width
                     else:
                         start_addr = req.addr + req_addr_size #+ (i - 1) * (self.data_signal_width//4) +
-
+                        print("start_addr",start_addr)
                         end_addr = start_addr + next_size
+                        print("end_addr",end_addr)
                         if ((start_addr // self.vault_bank_size) == (end_addr // self.vault_bank_size)):
+                            print("accessing (start_addr // self.vault_bank_size) == (end_addr // self.vault_bank_size) statement")
                             bank_idx = start_addr // self.vault_bank_size
                             bank_tag = self.GetBankTag()
                             req_bank = mem_request(req.cmd, start_addr, req.data, next_size, bank_tag)
                             self.vault_bank[bank_idx].request_port.append(req_bank)
                             Tags.append(bank_tag)
                         else:
+                            print("accessing two bank ")
                             bank_idx1 = start_addr // self.vault_bank_size
                             bank_tag1 = self.GetBankTag()
                             Tags.append(bank_tag1)

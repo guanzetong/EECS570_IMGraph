@@ -68,7 +68,7 @@ class EP_h1:
         elif func.lower() == 'sssp' or func.lower() == 'bfs':
             # for i in range(100):
             #     memory_bank_part.append(np.float32(np.inf))
-            memory_part = [np.float32(np.inf), np.float32(np.inf), np.float32(np.inf), np.float32(np.inf), np.float32(np.inf), 0+11, 2+11, 3+11, 5+11, 6+11, 7+11, 1,2,3,1,3,4,2 ]
+            memory_part = [np.float32(np.inf), np.float32(np.inf), np.float32(np.inf), np.float32(np.inf), np.float32(np.inf), 44, 52, 56, 64, 68, 76, 1,2,3,1,3,4,2 ]
             memory_part2 = list(np.zeros(2**21 // 4 - 100 -18, dtype=np.uint32))
             memory_bank = memory_part + memory_part2
         for i in range(num_vaults):
@@ -141,7 +141,7 @@ class EP_h1:
         # read vertex start address request
         v_st_addr = self.vertex_st_addr(Vid=vertex_id)
         st_tag = self.vault_mem[vault_num].GetReqTag()
-        req_v_st = mem_request("read", v_st_addr, None, 8, st_tag)
+        req_v_st = mem_request(cmd="read", addr=v_st_addr, data=None, size=8, req_tag=st_tag)
         print(f"reading start addr: st_addr={v_st_addr}")
         self.vault_mem[vault_num].request_port.append(req_v_st)
         return vertex_id, delta, vp_tag, st_tag
@@ -227,15 +227,15 @@ class EP_h1:
                 if response.req_tag == st_tag:
                     St1 = response.data[0]
                     St2 = response.data[1]
-                    n = abs(St1 - St2)
+                    n = St2 - St1
                     st_ready = True
                     self.vault_mem[vault_num].response_port.remove(self.vault_mem[vault_num].response_port[i])
                     print(f"St1, St2 is returned, St1={St1}, St2={St2} response_st_tag={response.req_tag}, req_st_tag={st_tag}\n")
                     neighbor_tag = self.vault_mem[vault_num].GetReqTag()
                     neighbor_addr = St1
-                    req_neighbor = mem_request("read", neighbor_addr, None, n*4, neighbor_tag)
+                    req_neighbor = mem_request("read", neighbor_addr, None, n, neighbor_tag)
                     self.vault_mem[vault_num].request_port.append(req_neighbor)
-                    print(f"neigbor number is {n}, neighbor_tag is {neighbor_tag}, sending req_neighbor ")
+                    print(f"neigbor number is {n/4}, neighbor_tag is {neighbor_tag}, sending req_neighbor ")
                     return n, st_ready, neighbor_tag
             print("No matched st_tag, St is not ready")
             return None, None, None
@@ -271,7 +271,7 @@ class EP_h1:
         '''
         if Vp_new is None or Vp is None:
             return False
-        elif abs(Vp_new-Vp) <= threshold:
+        elif np.abs(Vp_new-Vp) <= threshold:
             print(f'Vp_new({Vp_new}) - Vp({Vp}) <= threshold({threshold})')
             return False
         else:
@@ -298,6 +298,7 @@ class EP_h1:
                             neighbor_deque.append(item)
                         print("neighbors are ready, stored in neighbor_deque")
                         self.neighbor_ready[vault_num] = True
+                        print(f'neighbor_deque is {neighbor_deque}')
                         return neighbor_deque
                 print("neighbor tag isn't ready")
                 print(f'response port number: {length}')
@@ -322,7 +323,7 @@ class EP_h1:
         if not self.neighbor_ready[vault_num]:
             return None
         else:
-            if count < N_src-1:
+            if count < N_src/4-1:
                 busy = True
                 new_delta = self.Propagate(delta, N_src, func, beta) # function of alg
                 new_Vid = neighbor_deque.popleft()
@@ -331,7 +332,8 @@ class EP_h1:
                 self.eq_o.append(event(np.uint32(new_Vid),np.uint32(new_delta)))
                 count +=1
                 print('count: ',count)
-            elif count == N_src-1:  #last propagate
+            elif count == N_src/4-1:  #last propagate
+                print('last count: ',count)
                 busy = False
                 new_Vid = neighbor_deque.popleft()
                 print('new_Vid after propagate:', new_Vid)
@@ -342,8 +344,9 @@ class EP_h1:
                 self.vp_ready[vault_num] = False
                 self.st_ready[vault_num] = False
                 self.neighbor_ready[vault_num] = False
-                count +=1
+                count = 0
             else:
+                print(f'count = {count}')
                 count = 0
                 print("No further neighbor, waiting for new event")
                 busy = False
@@ -393,12 +396,15 @@ class EP_h1:
                     self.Update_VP(self.Vid[i], Vp_new)
                 if not self.st_ready[i] and self.st_tag[i] != None:
                     self.n[i], self.st_ready[i], self.neighbor_tag[i],  = self.get_edge_num(self.Vid[i], self.st_tag[i])
+                    print(f'now neighbor n:{self.n[i]}')
                 else:
                     pass
                 if not self.neighbor_ready[i] and self.neighbor_tag[i] != None:
                     self.neighbor_deque[i] = self.read_neighbor(i, self.neighbor_tag[i])
-                elif self.vp_ready[i] and self.st_ready[i] and self.neighbor_ready[i]:
+                    print(f'neighbor ready or not :{self.neighbor_ready[i]}')
+                elif self.vp_ready[i] and self.st_ready[i] and self.neighbor_ready[i] and self.n[i] != None:
                     print('busy, data is ready, propagating')
+                    print(f"number of neighbor(n[i]): {self.n[i]}")
                     self.count[i], self.busy[i], self.n[i] = self.PropagateNewEvent(N_src=self.n[i], delta=self.delta[i], vault_num=i, neighbor_deque=self.neighbor_deque[i], count=self.count[i], beta=0.85, func=self.func)
                 else:
                     print("fetching data")

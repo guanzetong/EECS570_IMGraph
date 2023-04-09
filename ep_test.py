@@ -12,7 +12,7 @@ ep_0_i  = deque()
 ep_0_o  = deque()
 ep_1_i  = deque()
 ep_1_o  = deque()
-ep_idx_ranges = [0, 63]
+ep_idx_ranges = [0, 1000]
 num_vaults = 32
 busy = []
 buffer = []
@@ -88,8 +88,14 @@ ep1.one_cycle(num_vaults)
 #print("\nCycle_13")
 ep1.one_cycle(num_vaults)
 
-for i in range(500):
+for i in range(120):
     print(f'\n cycle{i+13}')
+    ep1.one_cycle(num_vaults)
+
+eq_i.append(event(1,1))
+eq_i.append(event(2,1))
+for i in range(300):
+    print(f'\n cycle{i+133}')
     ep1.one_cycle(num_vaults)
 
 
