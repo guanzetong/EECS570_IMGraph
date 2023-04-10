@@ -94,10 +94,15 @@ for i in range(120):
 
 eq_i.append(event(1,1))
 eq_i.append(event(2,1))
-for i in range(300):
+for i in range(130):
     print(f'\n cycle{i+133}')
     ep1.one_cycle(num_vaults)
 
+eq_i.append(event(1,2))
+eq_i.append(event(3,2))
+for i in range(150):
+    print(f'\n cycle{i+263}')
+    ep1.one_cycle(num_vaults)
 
 ##print(ep1.buffer[2])
 
