@@ -7,7 +7,7 @@ from standard import mem_request, mem_response, event
 class EP_h1:
     
     def __init__(self, eq_i, eq_o, ep_0_i, ep_0_o, ep_1_i, ep_1_o,
-                 ep_idx_ranges, num_vaults, func):
+                 ep_idx_ranges, num_vaults, func, position):
         # Variables
         # eq_i/eq_o: input/output deque with event queues
         # ep_X_i/ep_X_o: input/output deque with adjacent event processors
@@ -24,6 +24,7 @@ class EP_h1:
         self.ep_1_i = ep_1_i
         self.ep_1_o = ep_1_o
         self.ep_idx_ranges = ep_idx_ranges
+        self.position = position
         self.func = func
         self.count = []
         self.busy = []
@@ -41,6 +42,7 @@ class EP_h1:
         self.neighbor_tag = []
         self.neighbor_deque = []
         self.vp_new_written = []
+        
         for i in range(num_vaults):
             self.busy.append(False)
             self.buffer.append(deque())
@@ -352,8 +354,37 @@ class EP_h1:
                 busy = False
             return count, busy, N_src
 
-    def forward_message(self, Vid,全局vid分配):
-        pass
+    def forward_message(self,incoming_events):
+        '''
+               < ep0 >
+            <          >
+           ep1   eq   ep3
+            >          <
+               < ep2 >
+        '''
+        event_coming_this_ep = []
+        for event in incoming_events:
+            if (event.idx > self.ep_idx_ranges[1]):
+                if (self.position == 0):
+                    self.ep_0_o.append(event)  # n to ne
+                elif (self.position == 1):
+                    self.ep_1_o.append(event)  # w to sw
+                elif (self.position == 2):
+                    self.ep_0_o.append(event)  # s to se
+                elif (self.position == 3):
+                    self.ep_0_o.append(event)  # e to ne
+            elif(event.idx < self.ep_idx_ranges[0]):
+                if (self.position == 0):
+                    self.ep_1_o.append(event)  # n to nw
+                elif (self.position == 1):
+                    self.ep_0_o.append(event)  # w to nw
+                elif (self.position == 2):
+                    self.ep_1_o.append(event)  # s to sw
+                elif (self.position == 3):
+                    self.ep_1_o.append(event)  # e to se
+            else:
+                event_coming_this_ep.append(event)
+        return event_coming_this_ep
 
     def buffer_event(self, buffer_idx, incoming_events):
         '''
@@ -369,11 +400,13 @@ class EP_h1:
         incoming_events = []
         for j in range(len(self.eq_i)):
             incoming_events.append(self.eq_i.popleft())
-        print(f"incoming events number: {len(incoming_events)}") # check the number of events feed into ep this cycle
+        event_coming_this_ep = self.forward_message(incoming_events)
+        print(f"incoming events number for all: {len(incoming_events)}\n")
+        print(f"incoming events number for current ep: {len(event_coming_this_ep)}") # check the number of events feed into ep this cycle
         for i in range(num_vaults):
             # read events into buffer
             self.vault_mem[i].one_cycle()
-            self.buffer_event(i, incoming_events)
+            self.buffer_event(i, event_coming_this_ep)
             print(f'buffer_{i} number:{len(self.buffer[i])}')
             if not self.busy[i]: # when not busy, try to take a new event if any
                 print('not busy, try to get a new event')
