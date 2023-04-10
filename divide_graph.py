@@ -47,7 +47,7 @@ for i in range(256):
             output_file.write(f"{num_nodes}\n{num_edges}\n")
             for i in range(num_nodes + 1):
                 edge_start = start_pointer
-                output_file.write(f"{node_pointers[start_node + i] - node_pointers[start_node]+ num_nodes*2}\n")  # -node_pointers[start_node]
+                output_file.write(f"{node_pointers[start_node + i] - node_pointers[start_node]+ 4* num_nodes*2}\n")  # -node_pointers[start_node]
             # for i in range(num_nodes + 1):
             #     output_file.write(f"{edge_list[node_pointers[start_node+i]:node_pointers[start_node+i+1]]}")
             for i in range(num_nodes + 1):
@@ -74,7 +74,7 @@ for i in range(256):
             output_file.write(f"{num_nodes}\n{num_edges}\n")
             for i in range(num_nodes):
                 edge_start = start_pointer
-                output_file.write(f"{node_pointers[start_node + i] - node_pointers[start_node] + num_nodes*2 }\n")  # -node_pointers[start_node]
+                output_file.write(f"{node_pointers[start_node + i] - node_pointers[start_node] + 4 * num_nodes*2 }\n")  # -node_pointers[start_node]
                 # output_file.write(f"{edge_list[start_pointer:]}")
             # for i in range(num_nodes-1):
             #     output_file.write(f"{edge_list[node_pointers[start_node+i]:node_pointers[start_node+i+1]]}")
