@@ -71,7 +71,7 @@ class EP_h1:
             # for i in range(100):
             #     memory_bank_part.append(np.float32(np.inf))
             memory_part = [np.float32(np.inf), np.float32(np.inf), np.float32(np.inf), np.float32(np.inf), np.float32(np.inf), 44, 52, 56, 64, 68, 76, 1,2,3,1,3,4,2 ]
-            memory_part2 = list(np.zeros(2**21 // 4 - 100 -18, dtype=np.uint32))
+            memory_part2 = list(np.zeros(2**21 // 4 - 100 -18, dtype=np.uint32))  # read from file
             memory_bank = memory_part + memory_part2
         for i in range(num_vaults):
             request_port = deque()
@@ -348,10 +348,7 @@ class EP_h1:
                 self.neighbor_ready[vault_num] = False
                 count = 0
             else:
-                print(f'count = {count}')
-                count = 0
-                print("No further neighbor, waiting for new event")
-                busy = False
+                print('error')
             return count, busy, N_src
 
     def forward_message(self,incoming_events):
@@ -442,39 +439,6 @@ class EP_h1:
                 else:
                     print("fetching data")
                 return None
-
-
-
-            #     if (self.Vp[i]!=None):
-            #         Vp_new = self.reduce(self.Vp[i], self.delta[i],self.func)
-            #         self.Update_VP(self.Vid[i], Vp_new)
-            #     self.n[i], neighbor_tag = self.get_edge_num(self.Vid[i], st_tag)
-            #     if (self.Vp[i] == None): # keep fetching Vp
-            #         self.Vp[i] = self.read_VP(i, vp_tag) # pop vp at once, return None if no response
-            #         print('fetching Vp')
-            #         if (self.Vp_new[i] == None):# Vp is ready
-            #             self.Vp_new[i] = self.reduce(self.Vp[i], self.delta[i], self.func) # return None if Vp is None
-            #             print(f"Vp is ready, Vp ={self.Vp[i]}, Vp_new ={self.Vp_new[i]}")
-            #             self.Update_VP(self.Vid[i],self.Vp_new[i]) # write Vp_new
-            #         else: pass
-            #     if (self.n[i] == None and self.Vid[i] !=None):
-            #         print(f"fetching start address")
-            #         self.n[i] = self.get_edge_num(self.Vid[i], st_tag) # try to pop st1 st2 at once and read neighbors, return None if st1 st2 not ready
-            #     else: # neighbor req emitted
-            #         print(f"nerghbor number is {self.n[i]}, now is propagating")
-            #         if self.Propagate_condion(self.Vp_new[i], self.Vp[i], threshold=0):
-            #             if (len(self.vault_mem[i].response_port) != 0):
-            #                 self.count[i], self.busy[i], self.n[i] = self.PropagateNewEvent(N_src=self.n[i], delta=self.delta[i], vault_num=i, count=self.count[i], beta=0.85, func=self.func)
-            #                 print(f"propagating new event, count={self.count[i]}, n={self.n[i]}, busy:{self.busy[i]}")
-            #             else:
-            #                 print(f"no neighbor data to propagate, busy:{self.busy[i]}")
-            #                 pass
-            # print("no task to do, waiting new event")
-            # return None
-
-
-
-# worst: different vault
 
 
 class EP_h2:
