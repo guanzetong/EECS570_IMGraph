@@ -27,7 +27,7 @@ if __name__ == "__main__":
                   ep_1_i=io_port.ep_nw_s_i, 
                   ep_1_o=io_port.ep_nw_s_o)
     
-    ep_n  = EP_h1(eq_i  =io_port.ep_n_s_i , 
+    ep_n  = EP_h1(eq_i  =io_port.ep_n_s_i ,   # i o is for ep
                   eq_o  =io_port.ep_n_s_o , 
                   ep_0_i=io_port.ep_n_e_i , 
                   ep_0_o=io_port.ep_n_e_o , 
@@ -39,7 +39,7 @@ if __name__ == "__main__":
                   ep_1_i=io_port.ep_ne_s_i, 
                   ep_1_o=io_port.ep_ne_s_o)
     
-    eq_w  = EP_h1(eq_i  =io_port.ep_w_e_i , 
+    ep_w  = EP_h1(eq_i  =io_port.ep_w_e_i , 
                   eq_o  =io_port.ep_w_e_o , 
                   ep_0_i=io_port.ep_w_n_i , 
                   ep_0_o=io_port.ep_w_n_o , 
