@@ -17,6 +17,9 @@ ROW_SIZE = int(ROW_EVENT_NUM * EVENT_SIZE)
 ROW_NUM = int(VAULT_SIZE / ROW_SIZE)
 VERTEX_PER_VAULT = int(VERTEX_NUM // VAULT_NUM)
 
+# 1 bank 256k byte
+# 256 event 1024 byte a row
+
 
 class EQ:
     
@@ -50,6 +53,7 @@ class EQ:
         # initial as all 1's
         self.row_valid_list = np.ones((num_vaults, ROW_NUM), dtype=bool)
         self.vault_valid_list = np.ones(VERTEX_NUM, dtype=bool)
+        
 
         # self.max_vertex_per_vault = VAULT_SIZE // EVENT_SIZE
         vault_mem_size = np.zeros(VAULT_SIZE // 4, dtype=np.uint32)
@@ -112,6 +116,7 @@ class EQ:
         return new_value
     
     def coalesce_event(self, delta, vault_idx, func):
+        # todo: 
         # Calculate the addresses for the existing event and new event
         old_event_val_addr = self.get_val_addr(delta.idx)
         delta_value = self.get_vidx_addr(delta.val)
@@ -154,6 +159,7 @@ class EQ:
             None
     
     def get_events_from_ep(self, max_events_per_port, func):
+        #todo: once send out the event, write corresponding mem to identity value.
         ep_input_list = [self.ep_e_i, self.ep_n_i, self.ep_w_i, self.ep_s_i]
         # add a logic to distinguish the longest queue
         longest_queue = max(ep_input_list ,key=len)
@@ -246,6 +252,9 @@ class EQ:
 
 
     def one_cycle(self):
+        for i in range(self.num_vaults):
+            self.vault_mem[i].one_cycle()
+
         # Get the events from the input ports
         self.get_events_from_ep(self.max_events_per_port, self.func)
         # Send the events to the output ports
