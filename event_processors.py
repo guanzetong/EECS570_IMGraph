@@ -229,7 +229,7 @@ class EP_h1:
                 if response.req_tag == st_tag:
                     St1 = response.data[0]
                     St2 = response.data[1]
-                    n = St2 - St1
+                    n = St2 - St1  # bytes number for neighbors
                     st_ready = True
                     self.vault_mem[vault_num].response_port.remove(self.vault_mem[vault_num].response_port[i])
                     print(f"St1, St2 is returned, St1={St1}, St2={St2} response_st_tag={response.req_tag}, req_st_tag={st_tag}\n")
@@ -243,15 +243,15 @@ class EP_h1:
             return None, None, None
 
 
-    def Propagate(self, delta, N_src, func='pagerank', beta=0.85):
+    def Propagate(self, delta, number_neighbor, func='pagerank', beta=0.85):
         '''
         just algorithm
         delta = reduce(read_vp(), allocate_event_vault_port()[1])
-        N_src = get_edge_num(Vid)
+        number_neighbor: number of neighbor
         '''
          
         if func.lower() == 'pagerank':
-            new_value = beta*delta/N_src
+            new_value = beta*delta/number_neighbor
         elif func.lower() == 'adsorption':
             new_value = beta*delta
         elif func.lower() =='comp' or func.lower() =='sssp':
@@ -259,7 +259,7 @@ class EP_h1:
         elif func.lower() == 'bfs':
             new_value = 0
         else:
-            new_value = beta*delta/N_src
+            new_value = beta*delta/number_neighbor
         return new_value
 
 #####
@@ -327,7 +327,7 @@ class EP_h1:
         else:
             if count < N_src/4-1:
                 busy = True
-                new_delta = self.Propagate(delta, N_src, func, beta) # function of alg
+                new_delta = self.Propagate(delta, N_src/4, func, beta) # function of alg
                 new_Vid = neighbor_deque.popleft()
                 print('new_Vid after propagate:', new_Vid)
                 print('new_delta after propagate:', new_delta)
@@ -339,7 +339,7 @@ class EP_h1:
                 busy = False
                 new_Vid = neighbor_deque.popleft()
                 print('new_Vid after propagate:', new_Vid)
-                new_delta = self.Propagate(delta, N_src, func, beta) # function of alg
+                new_delta = self.Propagate(delta, N_src/4, func, beta) # function of alg
                 print('new_delta after propagate:', new_delta)
                 self.eq_o.append(event(np.uint32(new_Vid),np.uint32(new_delta)))
                 print("finish last propagate")
@@ -350,7 +350,14 @@ class EP_h1:
             else:
                 print('error')
             return count, busy, N_src
-
+        
+    def forward_PropagtedEvent(self):
+        for event in self.ep_0_i:
+            self.eq_i.append(event)
+        for event in self.ep_1_i:
+            self.eq_i.append(event)
+        return None
+    
     def forward_message(self,incoming_events):
         '''
                < ep0 >
@@ -401,6 +408,8 @@ class EP_h1:
         print(f"incoming events number for all: {len(incoming_events)}\n")
         print(f"incoming events number for current ep: {len(event_coming_this_ep)}") # check the number of events feed into ep this cycle
         for i in range(num_vaults):
+            # forward events propagate by adjacent eps
+            self.forward_PropagtedEvent()
             # read events into buffer
             self.vault_mem[i].one_cycle()
             self.buffer_event(i, event_coming_this_ep)
