@@ -3,6 +3,7 @@ import copy
 from collections import deque
 from vault_mem import VM
 from standard import mem_request, mem_response, event
+import random
 
 class EP_h1:
     
@@ -761,7 +762,11 @@ class EP_h2:
                 new_Vid = neighbor_deque.popleft()
                 print('new_Vid after propagate:', new_Vid)
                 print('new_delta after propagate:', new_delta)
-                self.eq_o.append(event(np.uint32(new_Vid),np.uint32(new_delta)))
+                random_number = random.randint(0, 1)
+                if random_number == 0:
+                    self.ep_0_o.append(event(np.uint32(new_Vid),np.uint32(new_delta)))
+                else:
+                    self.ep_1_o.append(event(np.uint32(new_Vid),np.uint32(new_delta)))
                 count +=1
                 print('count: ',count)
             elif count == N_src/4-1:  #last propagate
@@ -771,7 +776,11 @@ class EP_h2:
                 print('new_Vid after propagate:', new_Vid)
                 new_delta = self.Propagate(delta, N_src, func, beta) # function of alg
                 print('new_delta after propagate:', new_delta)
-                self.eq_o.append(event(np.uint32(new_Vid),np.uint32(new_delta)))
+                random_number = random.randint(0, 1)
+                if random_number == 0:
+                    self.ep_0_o.append(event(np.uint32(new_Vid),np.uint32(new_delta)))
+                else:
+                    self.ep_1_o.append(event(np.uint32(new_Vid),np.uint32(new_delta)))
                 print("finish last propagate")
                 self.vp_ready[vault_num] = False
                 self.st_ready[vault_num] = False
@@ -793,6 +802,7 @@ class EP_h2:
 
     def one_cycle(self, num_vaults):
         incoming_events = []#allocate all the events from adjacent ep
+        event_coming_this_ep = []
         for j in range(len(self.ep_0_i)):
             incoming_events.append(self.ep_0_i.popleft())
         for j in range(len(self.ep_1_i)):
