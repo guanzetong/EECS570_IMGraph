@@ -44,6 +44,11 @@ class EP_h1:
         self.neighbor_deque = []
         self.vp_new_written = []
         
+        # constant
+        VERTEXT_NUM_VAULT = (self.ep_idx_ranges[1] - self.ep_idx_ranges[0] + 1) // 32 + 1
+        SIMPLE_TEST = True
+        FILE_READY = False
+
         for i in range(num_vaults):
             self.busy.append(False)
             self.buffer.append(deque())
@@ -65,36 +70,30 @@ class EP_h1:
         
         # Instantiate vault memories
         self.vault_mem = []
-        memory_bank_part = []
+        # instaniate Vp depend on func
         if func.lower() == 'pagerank':
-            memory_bank = np.zeros(2**21 // 4, dtype=np.uint32)
+            memory_part1 = np.zeros(VERTEXT_NUM_VAULT, dtype=np.uint32)
         elif func.lower() == 'sssp' or func.lower() == 'bfs':
-            # for i in range(100):
-            #     memory_bank_part.append(np.float32(np.inf))
-            memory_part = [np.float32(np.inf), np.float32(np.inf), np.float32(np.inf), np.float32(np.inf), np.float32(np.inf), 44, 52, 56, 64, 68, 76, 1,2,3,1,3,4,2 ]
-            memory_part2 = list(np.zeros(2**21 // 4 - 100 -18, dtype=np.uint32))  # read from file
-            memory_bank = memory_part + memory_part2
+            memory_part1 = [np.float32(np.inf) for _ in range(VERTEXT_NUM_VAULT)]
+        # just for simple test sssp
+        memory_part_simple1 = [np.float32(np.inf), np.float32(np.inf), np.float32(np.inf), np.float32(np.inf), np.float32(np.inf), 44, 52, 56, 64, 68, 76, 1,2,3,1,3,4,2 ]
+        memory_part_simple2 = list(np.zeros(2**21 // 4 - 100 -18, dtype=np.uint32))
+        memory_bank_simple = memory_part_simple1 + memory_part_simple2
         for i in range(num_vaults):
             request_port = deque()
             response_port = deque()
+            if (FILE_READY):
+                filename = f'vault_mem{[i]}.txt'
+                memory_part2 = []
+                with open(filename, 'r') as file:
+                    for line in file:
+                        memory_part2.append(line.strip())
+            if(SIMPLE_TEST):
+                memory_bank = memory_bank_simple
+            else:
+                memory_bank = memory_part1 + memory_part2
             vault_mem = VM(request_port, response_port, memory_bank)
             self.vault_mem.append(vault_mem)
-
-        # Initialize vp of each vault based on algorithm
-        vp_num = (self.ep_idx_ranges[1]-self.ep_idx_ranges[0]) // 32 + 1
-        vp_addr = 0
-        # if func.lower() == "pagerank":
-        #     for i in range(32):
-        #         for j in range(vp_num):
-        #             req = mem_request("write", vp_addr+j*4, 0) # vp 32 bits = 4 bytes
-        #             self.vault_mem[i].request_port.append(req)
-
-        # elif func.lower() == 'sssp' or func.lower() == 'bfs':
-        #     for i in range(32):
-        #         for j in range(vp_num):
-        #             req = mem_request("write", vp_addr+j*4, float('inf'),0)
-        #             self.vault_mem[i].request_port.append(req)
-
 
     def alloc_vault(self, Vid):
         '''
@@ -103,7 +102,7 @@ class EP_h1:
         Return:
         vault_idx: idx of related vault (from 0 to 31)
         '''
-        vault_capacity = (self.ep_idx_ranges[1]-self.ep_idx_ranges[0]) // 32 + 1
+        vault_capacity = (self.ep_idx_ranges[1]-self.ep_idx_ranges[0] +1) // 32 + 1
         vault_index = (Vid-self.ep_idx_ranges[0])// vault_capacity
         return int(vault_index)
 
