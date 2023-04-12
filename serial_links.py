@@ -30,6 +30,7 @@ class SL:
     
     def write_port(self, out):
         if out == None:
+            print(f"current output is {self.out_port}")
             return None
         else:
             for item in out:

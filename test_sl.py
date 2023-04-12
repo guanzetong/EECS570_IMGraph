@@ -1,11 +1,11 @@
 from serial_links import SL
 from collections import deque
 in_port = deque()
-for i in range(4):
+for i in range(20):
     in_port.append(i)
 out_port = deque()
 sl = SL(in_port, out_port)
-for i in range(6):
+for i in range(10):
     print(f'cycle{i}\n')
     sl.one_cycle()
 # Initialize the two-cycle delay function
