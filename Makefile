@@ -27,3 +27,4 @@ sl:
 
 clean:
 	rm -rf *.txt
+	rm -rf .vscode

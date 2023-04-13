@@ -5,9 +5,13 @@ for i in range(20):
     in_port.append(i)
 out_port = deque()
 sl = SL(in_port, out_port)
-for i in range(10):
+for i in range(15):
+    in_port.append(i+20)
     print(f'cycle{i}\n')
     sl.one_cycle()
+    for j in range(4):
+        if (len(sl.out_port)>0):
+            sl.out_port.popleft()
 # Initialize the two-cycle delay function
 
 # def two_cycle_delay(input_value):

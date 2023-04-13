@@ -39,19 +39,21 @@ class vault_bank:
         self.tag = 0
         self.data_size = 4 #4bytes, 32 bits
         self.idx=idx
+        self.cycle=0
         # ##print("self.cmd:", self.cmd, type(self.cmd))
 
     def one_cycle(self):
+        
         # ##print("self.cmd:", self.cmd, type(self.cmd))
 
         ##print("If request in Processing:", self.request_processing)
-        ##print("Left Burst Delay:", self.burst_delay)
-
+        print("Left Burst Delay:", self.burst_delay,"cycle",self.cycle)
+        self.cycle=self.cycle+1
         # continue reading or writing if not zero
         if self.burst_delay > 1:
-            # ##print("accessing:self.burst_delay-1")
+            print("accessing:self.burst_delay-1")
             self.burst_delay = self.burst_delay - 1
-            # ##print("self.burst_delay:",self.burst_delay)
+            print("self.burst_delay:",self.burst_delay)
             return
 
         if (self.request_processing == True and self.burst_delay == 1 and self.cmd == "read"):
@@ -98,10 +100,9 @@ class vault_bank:
         req = self.request_port.popleft()
         # #print("self.request_port:", self.request_port, type(self.request_port))
         # #print("req:", req, type(req))
-        ##print("//-----------------------------------Dealing with One Request---------------------------------//")
+        print("//-----------------------------------Dealing with One Request---------------------------------//")
 
-        # ##print("Processing Request:", "command:", req.cmd, "addr in bytes:", req.addr, "size in bytes:", req.size,
-        #       "Data:", req.data, "tag", req.tag)
+        
         # self.burst_delay = 0
         # self.cmd = 0
         # self.data = 0
@@ -119,12 +120,14 @@ class vault_bank:
         ##print("self.nx_row:", self.nx_row, "self.current_row:", self.current_row)
         # #print("len(vault_bank):", len(self.memory_bank))
         # read request
+        print("Processing Request:", "command:", req.cmd, "addr in bytes:", req.addr, "size in bytes:", req.size,
+              "Data:", req.data, "tag", req.req_tag)
         if self.cmd == "read":
             # calculate need how many Bursts, round up vaule, evey burst can deal with 128 bytes
             # self.burst_num = math.ceil(self.size / self.data_signal_width)
             # #print("How many Burst request needed:", self.burst_num)
             # calculating total delay
-            #print("//-------------------Calculating Reading Request Total Delay-------------------//")
+            print("//-------------------Calculating Reading Request Total Delay-------------------//")
             # #print("self.first_request:",self.first_request)
             # nx_size = self.size
             # for i in range(1, self.burst_num + 1):
@@ -133,29 +136,29 @@ class vault_bank:
                 # if nx_size<128 can not calculate  self.nx_row = (addr + i*128) // self.mem_row_size
                 if (self.size < self.data_signal_width):
                     self.current_row = self.nx_row
-                    #print("current row:", self.current_row)
-                    self.nx_row = (self.addr + self.size) // self.mem_row_size
-                    #print("next row:", self.nx_row)
+                    print("current row:", self.current_row)
+                    self.nx_row = (self.addr + self.size -1) // self.mem_row_size
+                    print("next row:", self.nx_row)
                     if (self.current_row == self.nx_row):
                         self.burst_delay = self.burst_delay + 34 + 17
                     else:
                         # Within one burst request, but row changed
                         self.burst_delay = self.burst_delay + 34 * 2 + 17 * 2
                     self.first_request = False
-                    #print("self.burst_delay:",self.burst_delay)
+                    print("self.burst_delay:",self.burst_delay)
                 else:
                     #print("Calculating Total Delay: accessing self.first_request == Ture statement,size>=36")
                     self.current_row = self.nx_row
-                    #print("current row:", self.current_row)
-                    self.nx_row = (self.addr + self.data_signal_width) // self.mem_row_size
-                    #print("next row:", self.nx_row)
+                    print("current row:", self.current_row)
+                    self.nx_row = (self.addr + self.data_signal_width -1) // self.mem_row_size
+                    print("next row:", self.nx_row)
                     if (self.current_row == self.nx_row):
                         self.burst_delay = self.burst_delay + 34 + 17
                     else:
                         # Within one burst request, but row changed
                         self.burst_delay = self.burst_delay + 34 * 2 + 17 * 2
                     self.first_request = False
-                    #print("self.burst_delay:", self.burst_delay)
+                    print("self.burst_delay:", self.burst_delay)
                 # self.burst_delay_deque.append(self.burst_delay)
             else:
                 #print("Calculating Total Delay: accessing else statement")
@@ -165,7 +168,7 @@ class vault_bank:
                     self.current_row = self.nx_row
                     if (self.addr // self.mem_row_size != self.current_row):
                         self.burst_delay = self.burst_delay + 34
-                    self.nx_row = (self.addr + self.size) // self.mem_row_size
+                    self.nx_row = (self.addr + self.size -1) // self.mem_row_size
                     if (self.current_row == self.nx_row):
                         self.burst_delay = self.burst_delay + 17
                     else:
@@ -179,7 +182,7 @@ class vault_bank:
                         self.burst_delay = self.burst_delay + 34
 
                     #print("current row:", self.current_row)
-                    self.nx_row = (self.addr + self.data_signal_width) // self.mem_row_size
+                    self.nx_row = (self.addr + self.data_signal_width -1 ) // self.mem_row_size
                     #print("next row:", self.nx_row)
                     if (self.current_row == self.nx_row):
                         self.burst_delay = self.burst_delay + 17
@@ -197,7 +200,7 @@ class vault_bank:
                 if (self.size < self.data_signal_width):
                     self.current_row = self.nx_row
                     #print("current row:", self.current_row)
-                    self.nx_row = (self.addr + self.size) // self.mem_row_size
+                    self.nx_row = (self.addr + self.size -1 ) // self.mem_row_size
                     #print("next row:", self.nx_row)
                     if (self.current_row == self.nx_row):
                         self.burst_delay = self.burst_delay + 34 + 17
@@ -210,7 +213,7 @@ class vault_bank:
                     #print("Calculating Total Delay: accessing self.first_request == Ture statement,size>=36")
                     self.current_row = self.nx_row
                     #print("current row:", self.current_row)
-                    self.nx_row = (self.addr + self.data_signal_width) // self.mem_row_size
+                    self.nx_row = (self.addr + self.data_signal_width -1 ) // self.mem_row_size
                     #print("next row:", self.nx_row)
                     if (self.current_row == self.nx_row):
                         self.burst_delay = self.burst_delay + 34 + 17
@@ -228,7 +231,7 @@ class vault_bank:
                     self.current_row = self.nx_row
                     if (self.addr // self.mem_row_size != self.current_row):
                         self.burst_delay = self.burst_delay + 34
-                    self.nx_row = (self.addr + self.size) // self.mem_row_size
+                    self.nx_row = (self.addr + self.size-1) // self.mem_row_size
                     if (self.current_row == self.nx_row):
                         self.burst_delay = self.burst_delay + 17
                     else:
@@ -242,7 +245,7 @@ class vault_bank:
                         self.burst_delay = self.burst_delay + 34
 
                     #print("current row:", self.current_row)
-                    self.nx_row = (self.addr + self.data_signal_width) // self.mem_row_size
+                    self.nx_row = (self.addr + self.data_signal_width -1 ) // self.mem_row_size
                     #print("next row:", self.nx_row)
                     if (self.current_row == self.nx_row):
                         self.burst_delay = self.burst_delay + 17
@@ -251,7 +254,7 @@ class vault_bank:
                         self.burst_delay = self.burst_delay + 34 + 17 * 2
                     self.first_request = False
 
-                #print("Burst_delay is :", self.burst_delay)
+                print("Burst_delay is :", self.burst_delay)
                 # print_deque()
                 #print("//----------------End of Calculating Total Delay-------------------//")
         #print("//-----------------------------------End of Dealing One Request-----------------------------------//")

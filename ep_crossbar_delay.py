@@ -43,7 +43,7 @@ class EP_h1:
         self.neighbor_tag = []
         self.neighbor_deque = []
         self.vp_new_written = []
-        self.previous_values = [None, None, None]
+        self.previous_values = [[], [], []]
         
         # constant
         VERTEXT_NUM_VAULT = (self.ep_idx_ranges[1] - self.ep_idx_ranges[0] + 1) // 32 + 1
@@ -210,7 +210,7 @@ class EP_h1:
             self.vault_mem[vault_num].request_port.append(req_w_Vp)
             self.vp_new_written[vault_num] = True
         else:
-            print('Vp_new is not ready')
+            print('Error! Vp_new is not ready')
         return None
         
 
@@ -418,10 +418,7 @@ class EP_h1:
         event_delayed = self.three_cycle_delay(event_coming_this_ep)
         print(f"incoming events number for all: {len(incoming_events)}\n")
         print(f"incoming events number for current ep: {len(event_coming_this_ep)}") # check the number of events feed into ep this cycle
-        if event_delayed == None:
-            print("No delayed event this cycle")
-        else:
-            print(f"delayer events number for current ep: {len(event_delayed)}")
+        print(f"delayed events number for current ep this cycle: {len(event_delayed)}")
         for i in range(num_vaults):
             # forward events propagate by adjacent eps
             self.forward_PropagtedEvent()
@@ -445,12 +442,12 @@ class EP_h1:
                 print('busy, try to read needed data')
                 if not self.vp_ready[i] and self.vp_tag[i] !=None:
                     self.Vp[i], self.vp_ready[i] = self.read_VP(i, self.vp_tag[i], self.vp_ready[i])
-                elif not self.vp_new_written[i]:
+                elif (not self.vp_new_written[i] and self.Vp[i] != None):
                     Vp_new = self.reduce(self.Vp[i], self.delta[i],self.func)
                     self.Update_VP(self.Vid[i], Vp_new)
                 if not self.st_ready[i] and self.st_tag[i] != None:
-                    self.n[i], self.st_ready[i], self.neighbor_tag[i],  = self.get_edge_num(self.Vid[i], self.st_tag[i])
-                    print(f'now neighbor n:{self.n[i]}')
+                    self.n[i], self.st_ready[i], self.neighbor_tag[i], = self.get_edge_num(self.Vid[i], self.st_tag[i])
+                    print(f'now neighbor number *4:{self.n[i]}')
                 else:
                     pass
                 if not self.neighbor_ready[i] and self.neighbor_tag[i] != None:

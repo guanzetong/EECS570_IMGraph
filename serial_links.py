@@ -8,7 +8,7 @@ class SL:
         # out_port: output deque
         self.in_port  = in_port
         self.out_port = out_port
-        self.previous_values = [None, None]
+        self.previous_values = [[], []]
 
     def read_port(self):
         content=[]
