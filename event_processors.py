@@ -256,6 +256,7 @@ class EP_h1:
                         print(f"neigbor number is {n/4}, neighbor_tag is {neighbor_tag}, sending req_neighbor ")
                         return n, st_ready, neighbor_tag
                     else:
+                        print(f"St1, St2 is returned, St1={St1}, St2={St2} response_st_tag={response.req_tag}, req_st_tag={st_tag}\n")
                         print('neighbor number is 0, no need to send req')
                         return n, st_ready, 0
             print("No matched st_tag, St is not ready")
@@ -457,11 +458,12 @@ class EP_h1:
                     self.vp_ready[i] = False
                     self.st_ready[i] = False
                     self.neighbor_ready[i] = False
+                    self.vp_new_written[i] = False
                     print(f"vault[{i}] is reading event from buffer{i}")  # check working buffer
                 else:
                     pass
             else:# when busy not accept new event, reading Vp,St or propagating
-                print('busy, try to read needed data')
+                print('busy, try to read needed data or propagating')
                 print(f"self.vp_ready[{i}] is {self.vp_ready[i]}, self.vp_tag[{i}] = {self.vp_tag[i]}")
                 if not self.vp_ready[i] and self.vp_tag[i] !=None:
                     print('try to read vp from response port')
