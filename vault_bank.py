@@ -339,10 +339,15 @@ class vault_bank:
             ##print("//--------------Finish Accessing Reading Request Finial cycle-------------------//")
             return
         if (self.request_processing == True and self.burst_delay == 1 and self.cmd == "write"):
-            ##print("//-------------------Accessing Writing Request Finial cycle-----------------------//")
+            print("//-------------------Accessing Writing Request Finial cycle-----------------------//")
+            print("self.size:",self.size,"self.addr",self.addr,"self.data",self.data)
             num_data = self.size // self.data_size
+            # print("num_data",num_data)
+            #print("self.data",self.data)
             for i in range(num_data):
                 self.memory_bank[((self.addr-self.idx*2**18)//self.data_size + i)] = self.data[i]
+                # print("self.data[i]",self.data[i])
+                # print("((self.addr-self.idx*2**18)//self.data_size + i)",((self.addr-self.idx*2**18)//self.data_size + i))
             self.request_processing = False
             self.burst_delay = 0
             self.cmd = 0

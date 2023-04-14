@@ -89,7 +89,7 @@ class VM:
                     if (next_size > self.data_signal_width):
                         req_addr_size=req_addr_size+self.data_signal_width
                         start_addr = req.addr + (i - 1) * self.data_signal_width
-                        end_addr = start_addr + self.data_signal_width
+                        end_addr = start_addr + self.data_signal_width -1 
                         if ((start_addr // self.vault_bank_size) == (end_addr // self.vault_bank_size)):
                             # print("accessing (start_addr // self.vault_bank_size) == (end_addr // self.vault_bank_size) statement")
                             bank_idx = start_addr // self.vault_bank_size
@@ -119,7 +119,7 @@ class VM:
                     else:
                         start_addr = req.addr + req_addr_size #+ (i - 1) * (self.data_signal_width//4) +
                         # print("start_addr",start_addr)
-                        end_addr = start_addr + next_size
+                        end_addr = start_addr + next_size -1
                         # print("end_addr",end_addr)
                         if ((start_addr // self.vault_bank_size) == (end_addr // self.vault_bank_size)):
                             # print("accessing (start_addr // self.vault_bank_size) == (end_addr // self.vault_bank_size) statement")
@@ -151,7 +151,7 @@ class VM:
                     if (next_size > self.data_signal_width):
 
                         start_addr = req.addr + (i - 1) * self.data_signal_width
-                        end_addr = start_addr + self.data_signal_width
+                        end_addr = start_addr + self.data_signal_width -1 
                         if ((start_addr // self.vault_bank_size) == (end_addr // self.vault_bank_size)):
                             bank_idx = start_addr // self.vault_bank_size
                             data=req.data[(i-1)*self.data_signal_width//self.data_size
@@ -187,7 +187,7 @@ class VM:
                     else:
                         start_addr = req.addr + req_addr_size  # + (i - 1) * (self.data_signal_width//4) +
                         # start_addr=self.start_addr
-                        end_addr = start_addr + next_size
+                        end_addr = start_addr + next_size -1 
                         if ((start_addr // self.vault_bank_size) == (end_addr // self.vault_bank_size)):
                             bank_idx = start_addr // self.vault_bank_size
                             data=req.data[(i-1)*self.data_signal_width//self.data_size

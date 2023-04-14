@@ -8,7 +8,7 @@ from serial_links import SL
 import copy
 
 #define constant
-VERTEX_NUM = 32
+VERTEX_NUM = 600000
 VAULT_NUM = 32
 VAULT_GROUP_NUM = 4
 VAULT_NUM_PER_GROUP = 8
@@ -174,7 +174,7 @@ class EQ:
         if vertex_id > VERTEX_NUM:
             #print("Error: vertex_id is out of range")
             return -1
-        return vertex_id // VERTEX_PER_VAULT
+        return int(vertex_id // VERTEX_PER_VAULT)
     
     def get_bank_idx(self, vertex_id):
         if vertex_id > VERTEX_NUM:
@@ -192,7 +192,7 @@ class EQ:
         position_in_bank = (vertex_id * EVENT_SIZE) % BANK_SIZE
         return position_in_bank // ROW_SIZE
 
-    def get_event_idx(vertex_id):
+    def get_event_idx(self,vertex_id):
         if vertex_id > VERTEX_NUM:
             #print("Error: vertex_id is out of range")
             return -1
@@ -236,7 +236,7 @@ class EQ:
     # send out index
 
 
-    def reduce(self, func, vault_idx): #delta = allocate_event_vault_port()[1]
+    def reduce(self,vault_idx, func): #delta = allocate_event_vault_port()[1]
         '''
         input:
         func: which algorithm
@@ -244,26 +244,27 @@ class EQ:
         return:
         new_val of vertex property
         '''
-        if self.old_value[vault_idx] != None:
+        if self.old_val[vault_idx] != None:
             if func.lower() == 'pagerank' or func.lower() == 'adsorption':
-                self.new_val[vault_idx] = self.old_value[vault_idx] + self.delta[vault_idx]
+                self.coalesced_val[vault_idx] = self.old_val[vault_idx] + self.delta[vault_idx].val
             elif func.lower() == 'sssp' or func.lower() == 'bfs':
-                self.new_val[vault_idx] = min(self.old_value[vault_idx], self.delta[vault_idx])
+                self.coalesced_val[vault_idx] = min(self.old_val[vault_idx], self.delta[vault_idx].val)
             elif func.lower() =='comp':
-                self.new_val[vault_idx] = max(self.old_value[vault_idx], self.delta[vault_idx])
+                self.coalesced_val[vault_idx] = max(self.old_val[vault_idx], self.delta[vault_idx].val)
             else:
-                self.new_val[vault_idx] = self.old_value[vault_idx] + self.delta[vault_idx]
+                self.coalesced_val[vault_idx] = self.old_val[vault_idx] + self.delta[vault_idx].val
         else:
             return None
         # return self.new_val[vault_idx]  # actully no need to return
     
     def coalesce_read_req(self, vault_idx):
-        incoming_event_val_addr = self.get_starting_address(self.delta[vault_idx].idx)
+        print("send coalsece read request")
+        incoming_event_val_addr = self.get_starting_address(int(self.delta[vault_idx].idx))
         self.old_value_addr[vault_idx] = incoming_event_val_addr
         # Read the existing event's value from the vault memory
         self.old_value_tag[vault_idx] = self.vault_mem[vault_idx].GetReqTag()
         req_old_val = mem_request(cmd="read", addr=incoming_event_val_addr, data=None, size=4, req_tag=self.old_value_tag[vault_idx])
-        # #print(f"reading old value start addr: st_addr={incoming_event_val_addr}")
+        print(f"reading old value start addr: st_addr={incoming_event_val_addr}")
         self.vault_mem[vault_idx].request_port.append(req_old_val)
         # self.coalesce_read_ing_flag[vault_idx] = True
     
@@ -284,8 +285,8 @@ class EQ:
     
     def coalesce_write(self, vault_idx):
         # Write the coalesced event's value back to the vault memory at the existing event's value address
-        write_value_tag = 0
-        req_wirte_new = mem_request(cmd="write", addr=self.old_value_addr[vault_idx], data=self.coalesced_val[vault_idx], size=4, req_tag=write_value_tag)
+        print(f"self.coalesced_val[{vault_idx}]",self.coalesced_val[vault_idx])
+        req_wirte_new = mem_request(cmd="write", addr=self.old_value_addr[vault_idx], data=self.coalesced_val[vault_idx], size=4, req_tag=0)
         #print(f"write coalescing value: new_val={self.coalesced_val[vault_idx]}")
         self.vault_mem[vault_idx].request_port.append(req_wirte_new)
         self.old_val[vault_idx] = None
@@ -341,7 +342,7 @@ class EQ:
     def priority_arbiter(self, vault_idx):
         #print("priority arbiter")
         grant_onehot = [False] * (BANKS_PER_VAULT * ROWS_PER_BANK)
-        num_inputs = BANKS_PER_VAULT * ROWS_PER_BANK
+        num_inputs = BANKS_PER_VAULT * ROWS_PER_BANK  # 8*256 = 1024
         grant_idx = None
 
         for i in range(num_inputs):
@@ -448,6 +449,7 @@ class EQ:
             resp_val = self.vault_mem[vault_idx].response_port[i]
             # #print("Response: ", resp_val.req_tag, "Send row tag: ", self.send_row_tag_list[vault_idx])
             if resp_val.req_tag == self.send_row_tag_list[vault_idx]:
+                print("accessing tag matched")
                 self.send_row_tag_list[vault_idx] = None
                 self.row_data_list[vault_idx] = resp_val.data
                 #print("vault_idx",vault_idx)
@@ -573,21 +575,23 @@ class EQ:
     # allocte all incoming events to related buffer (use append), each vault has a buffer deque
 
         self.get_events_from_ep()
+
         for i in range(self.num_vaults):
             self.vault_mem[i].one_cycle()
-            #print(f"vault {i} buffer: {self.buffer[i]}")
+            print(f"vault {i} buffer: {len(self.buffer[i])}")
             if len(self.buffer[i]) == 0:
-                #print(f"buffer{i} is empty")
+                print(f"buffer{i} is empty")
                 pass
         
         for i in range(int(self.num_vaults // 8)):
             
             if self.group_busy_flag[i] == False:
                 self.round_robin_arbiter(i)
-                print(f'vault[{i}] is selected')
+                print(f'vault[{self.grant_vault_idx[i]}] is selected')
                 if self.grant_vault_idx[i] != None:
                     #print(f'group[{i}] is choosing a new vault')
                     self.group_busy_flag[i] = True
+                    print(f"group {i} busy", self.group_busy_flag[i])
         
         
         #for group in vault_groups:
@@ -596,16 +600,17 @@ class EQ:
             #     if valid grant:
             #         set group busy flag
         for i in range(self.num_vaults):
+            
             if self.grant_vault_onehot[i // 8][i % 8] == True:
                 
                 # print(f'vault[{i}] is selected')
                 if self.vault_coalescing_flag[i] == True:
-                    #print(f'selected vault[{i}] is coalescing')
+                    print(f'selected vault[{i}] is coalescing')
                     if self.old_val[i] == None:
-                        #print('fetching old_val')
+                        print('fetching old_val')
                         self.coalesce_check_response(i) # get resp tag and old val
                     elif self.old_val[i] != None:
-                        #print('old_val is ready')
+                        print('old_val is ready')
                         self.reduce(i, "pagerank")
                         self.coalesce_write(i)
                         self.vault_coalescing_flag[i] = False
@@ -615,9 +620,11 @@ class EQ:
                         self.row_valid_list[i][row_idx] = True
                         
                 elif self.read_row_data_flag[i] == True:  # 32 sized flag indicating whether is reading a row data
-                    #print('selected vault is fetching row data')
+                    print('selected vault is fetching row data')
                     self.read_row_data_resp(i)  # todo : modify read_row_data_resp to vault-level behavior
+                    print("i",i)
                     if self.row_data_list[i] != []:
+                        # print('self.row_data_list is not empty')
                         self.row_data_2_event_list(i)
                         self.send_data_to_ep(i)
                         self.write_mem_to_identity(i)
@@ -629,49 +636,58 @@ class EQ:
                         self.row_valid_list[i][self.grant_row_idx[i]] = False
                 
                 else: 
+                    print(f'grant row idx {i} {self.grant_row_idx[i]}')
                     self.priority_arbiter(i) #grant_row_idx = num_bank* row_pre_bank
+                    print("arbited row i:", i)
                     if self.grant_row_idx[i] == None: # to do add self.grant_row_idx
                         self.group_busy_flag[i//8] = False
+                        print(f"group {i // 8} not busy", self.group_busy_flag[i//8])
                         self.vault_valid_list[i//8][i%8] = False
-                        #print(f'vault[{i}] is empty, set to not valid')
-                        #print(f'group[{i//8}] is not busy now')
+                        print(f'vault[{i}] is empty, set to not valid')
+                        print(f'group[{i//8}] is not busy now')
                     else:
                         self.read_row_data_req(i) # which row to read
                         self.read_row_data_flag[i] = True
             
             
             elif self.grant_vault_onehot[i // 8][i % 8] == False:
-                #print(f'vault[{i}] is not selected')
+                print(f'vault[{i}] is not selected')
+                print(f'vault_coalescing_flag[{i} is {self.vault_coalescing_flag[i]}]')
                 if self.vault_coalescing_flag[i] == True:
-                    #print(f'vault[{i}] is coalescing')
+                    print(f'vault[{i}] is coalescing')
                     if self.old_val[i] == None and self.old_value_tag[i] != None:
-                        #print('fetching old_val')
+                        print('fetching old_val')
                         self.coalesce_check_response(i) # get resp tag and old val
                     elif self.old_val[i] != None:
-                        #print('old_val is ready')
+                        print('old_val is ready')
                         self.reduce(i, "pagerank")
                         self.coalesce_write(i)
+                        print(f'self.vault_mem[{i}].request data = {self.vault_mem[i].request_port[0].data}')
                         self.vault_coalescing_flag[i] = False
                         self.old_val[i] = None
                         self.vault_valid_list[i // 8][i % 8] = True # 有东西
-                        row_idx = self.get_bank_idx(self.delta[i].idx)*BANKS_PER_VAULT + self.get_row_idx(self.delta[i].idx) * ROWS_PER_BANK
+                        bank_idx = int(self.get_bank_idx(self.delta[i].idx))
+                        row_idx_offset = int(self.get_row_idx(self.delta[i].idx))
+                        row_idx = bank_idx * ROWS_PER_BANK + row_idx_offset
+                        print(f'bank_idx={bank_idx}, row_idx_offset ={row_idx_offset}')
+                        print("row_idx", row_idx)
                         self.row_valid_list[i][row_idx] = True
                 
 
                 elif self.vault_coalescing_flag[i] == False:
                     if (len(self.buffer[i])==0):
                         pass
-                        #print(f'no incoming event for vault[{i}]')
+                        print(f'no incoming event for vault[{i}]')
                     else:
-                        #print(f'vault[{i}] is taking a new event this cylce')
+                        print(f'vault[{i}] is taking a new event this cylce')
                         incoming_event = self.buffer[i].popleft()
-                        self.delta[i] = incoming_event.val
+                        self.delta[i] = incoming_event
                         # how to store incoming_event.idx (Vid)?
                         # -----------------
                         # calculate address send read req(at the same time renew self.old_value_tag[i])
-
+                        self.coalesce_read_req(i)
                         # reset flags and values
-                        self.vault_coalescing_flag[i] == True
+                        self.vault_coalescing_flag[i] = True
                         self.old_val[i] = None
 
 
