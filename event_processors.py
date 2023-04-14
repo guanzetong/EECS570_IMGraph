@@ -219,7 +219,7 @@ class EP_h1:
             vault_num = self.alloc_vault(Vid)
             #tag_w_vp = self.vault_mem[vault_num].GetReqTag()
             req_w_Vp = mem_request("write", Vp_addr, [Vp_new], 4, 0)
-            print(f"writing Vp_new, Vp_new = {Vp_new}")
+            print(f"writing,Vid = {Vid}, Vp_new = {Vp_new}")
             self.vault_mem[vault_num].request_port.append(req_w_Vp)
             self.vp_new_written[vault_num] = True
         else:
@@ -377,6 +377,7 @@ class EP_h1:
                 print('error')
                 print("count",count)
                 print('N_src', N_src)
+                pass
             return count, busy, N_src
         
     def forward_PropagtedEvent(self):
@@ -441,7 +442,8 @@ class EP_h1:
             # read events into buffer
             self.vault_mem[i].one_cycle()
             self.buffer_event(i, event_coming_this_ep)
-            print(f'buffer_{i} number:{len(self.buffer[i])}')
+            if len(self.buffer[i]) !=0:
+                print(f'buffer_{i} number:{len(self.buffer[i])}')
             
             if not self.busy[i]: # when not busy, try to take a new event if any
                 print('not busy, try to get a new event')
@@ -469,6 +471,8 @@ class EP_h1:
                     print('try to read vp from response port')
                     self.Vp[i], self.vp_ready[i] = self.read_VP(i, self.vp_tag[i], self.vp_ready[i])
                 elif not self.vp_new_written[i]:
+                    if self.Vp[i] != None:
+                        print(f'Vp_old = {self.Vp[i]}')
                     self.Vp_new[i] = self.reduce(self.Vp[i], self.delta[i],self.func)
                     print('write vp_new to vm')
                     self.Update_VP(self.Vid[i], self.Vp_new[i], i)
@@ -495,6 +499,7 @@ class EP_h1:
                     self.count[i], self.busy[i], self.n[i] = self.PropagateNewEvent(N_src=self.n[i], delta=self.delta[i], vault_num=i, neighbor_deque=self.neighbor_deque[i], count=self.count[i], beta=0.85, func=self.func)
                 else:
                     print("fetching data")
+                    pass
                 return None
 
 
