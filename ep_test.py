@@ -28,7 +28,7 @@ position = 0
 #for i in range (60):
 #    eq_i.append(event(i,i))
 
-ep1=EP_h1(eq_i, eq_o, ep_0_i, ep_0_o, ep_1_i, ep_1_o, ep_idx_ranges, num_vaults,"sssp", 0)
+ep1=EP_h1(eq_i, eq_o, ep_0_i, ep_0_o, ep_1_i, ep_1_o, ep_idx_ranges, num_vaults,"pagerank", 0)
 eq_i.append(event(0,0))
 print("Cycle_1")
 ep1.one_cycle(num_vaults)

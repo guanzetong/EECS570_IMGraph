@@ -323,8 +323,10 @@ class vault_bank:
             Read_Data = np.zeros(num_data, dtype=np.float32)
             # ##print("self.memory_bank:",self.memory_bank)
             for i in range(num_data):
+                print("self.addr",self.addr,"self.idx",self.idx,"i",i,"self.size",self.size)
+                print("((self.addr-self.idx*2**18)//self.data_size + i)",((self.addr-self.idx*2**18)//self.data_size + i))
                 Read_Data[i] = self.memory_bank[((self.addr-self.idx*2**18)//self.data_size + i)]
-                #print("((self.addr-self.idx*2**18)//self.data_size + i)",((self.addr-self.idx*2**18)//self.data_size + i))
+                
             # ##print("Read_Data",Read_Data)
             response=bank_response(Read_Data,self.tag)
             self.response_port.append(response)
